@@ -4,31 +4,31 @@
 #include <cstdio>
 #include <cmath>
 
-#include "bitspray.h"
+#include "SDA.h"
 
-bitspray::bitspray() {//creates an unallocated bitspray
+SDA::SDA() {//creates an unallocated SDA
     init = St = cs = 0;
     trans = resp = nullptr;
 }
 
-bitspray::bitspray(int S) {//create buffer size B, states S
+SDA::SDA(int S) {//create buffer size B, states S
     init = St = cs = 0;
     trans = resp = nullptr;
-    create(S);  //allocate a bitspray with B buffer and S states
+    create(S);  //allocate a SDA with B buffer and S states
 }
 
-bitspray::bitspray(bitspray &other) {//copy constructor
+SDA::SDA(SDA &other) {//copy constructor
     init = St = cs = 0;
     trans = resp = nullptr;
     copy(other);  //call the copy routine
 }
 
-bitspray::~bitspray() {//destructor
+SDA::~SDA() {//destructor
     destroy();    //call the deallocation routines.
 }
 
 //utility routines
-void bitspray::create(int S) {  //allocate B-sized buffer and S states
+void SDA::create(int S) {  //allocate B-sized buffer and S states
     if (St != 0) {   //safety first
         destroy();
     }
@@ -48,7 +48,7 @@ void bitspray::create(int S) {  //allocate B-sized buffer and S states
     }
 }
 
-void bitspray::randomize() {  //fill in new random values
+void SDA::randomize() {  //fill in new random values
     init = (int) lrand48() % 2;  //establish the initial action
     for (int i = 0; i < St; i++) {     //loop over the states
         trans[i][0] = (int) lrand48() % St;    //create zero transition
@@ -59,7 +59,7 @@ void bitspray::randomize() {  //fill in new random values
     }
 }
 
-void bitspray::copy(bitspray &other) {//copy routine
+void SDA::copy(SDA &other) {//copy routine
     if (other.St == 0)destroy();  //safety first!
     if (St != other.St) {         //not the same size
         destroy();
@@ -87,7 +87,7 @@ void bitspray::copy(bitspray &other) {//copy routine
     }
 }
 
-void bitspray::destroy() {//deallocate
+void SDA::destroy() {//deallocate
     if (St > 0) {//if there is something to deallocate
 //    delete[] buf;         //kill the memory buffer
         for (int i = 0; i < St; i++) { //loop over states
@@ -103,7 +103,7 @@ void bitspray::destroy() {//deallocate
 }
 
 //use routines
-void bitspray::reset(int *Q, int &H, int &T) {//reset to initial state
+void SDA::reset(int *Q, int &H, int &T) {//reset to initial state
     if (St > 0) {//if the automata has been properly set up
         cs = 0;            //set to starting state
 //    buf[0] = init;     //load initial action into the buffer
@@ -113,7 +113,7 @@ void bitspray::reset(int *Q, int &H, int &T) {//reset to initial state
     } //all reset!
 }
 
-void bitspray::next(int *Q, int &H, int &T, int qz) {//update the output queue
+void SDA::next(int *Q, int &H, int &T, int qz) {//update the output queue
     int td; //transition driver buffer
 
     td = Q[H++];
@@ -126,11 +126,11 @@ void bitspray::next(int *Q, int &H, int &T, int qz) {//update the output queue
     cs = trans[cs][td];  //update state
 }
 
-//bool bitspray::hasnext(int b) const {
+//bool SDA::hasnext(int b) const {
 //  return (hd + b < Nb);
 //}
 
-//int bitspray::bit() {//get the next bit
+//int SDA::bit() {//get the next bit
 //
 //  int ret;  //return value
 //  int i;    //loop index
@@ -148,7 +148,7 @@ void bitspray::next(int *Q, int &H, int &T, int qz) {//update the output queue
 //  } else return (0);      //empty automata returns zeros
 //}
 
-//int bitspray::val(int b) {//return an integer value based on b bits
+//int SDA::val(int b) {//return an integer value based on b bits
 //
 //  int accu;  //value accumulator
 //  int i;     //loop index
@@ -162,7 +162,7 @@ void bitspray::next(int *Q, int &H, int &T, int qz) {//update the output queue
 //  return (accu);         //return the integer to the user
 //}
 
-//double bitspray::rel(int b) {//return a [0,1) value based on b bits
+//double SDA::rel(int b) {//return a [0,1) value based on b bits
 //
 //  int accu;  //value accumulator
 //  int d;     //divisor
@@ -180,7 +180,7 @@ void bitspray::next(int *Q, int &H, int &T, int qz) {//update the output queue
 //}
 
 //Genetics
-void bitspray::tpc(bitspray &other) {//two point crossover
+void SDA::tpc(SDA &other) {//two point crossover
     int cp1, cp2;   //crossover points
     int sw;         //swap variable
 
@@ -217,7 +217,7 @@ void bitspray::tpc(bitspray &other) {//two point crossover
     }//Done crossing over!
 }
 
-void bitspray::mutate(int nm) {//mutate a response or transition
+void SDA::mutate(int nm) {//mutate a response or transition
     int m;   //mutation type index
 
     for (int i = 0; i < nm; i++) {
@@ -243,7 +243,7 @@ void bitspray::mutate(int nm) {//mutate a response or transition
 }
 
 //Input/Output
-void bitspray::print(ostream &aus) {//write in human readable form
+void SDA::print(ostream &aus) {//write in human readable form
     aus << "->" << init << endl;
     for (int i = 0; i < St; i++) {//loop over states
         aus << i << ") ";  //print state number
@@ -254,7 +254,7 @@ void bitspray::print(ostream &aus) {//write in human readable form
     }
 }
 
-void bitspray::write(ostream &aus) {//write to output stream
+void SDA::write(ostream &aus) {//write to output stream
 //  aus << Nb << endl;          //save buffer size
     aus << St << endl;          //save number of states
     aus << init << endl;        //save the initial action
@@ -267,7 +267,7 @@ void bitspray::write(ostream &aus) {//write to output stream
     }
 }
 
-void bitspray::read(istream &inp) {//read from input stream
+void SDA::read(istream &inp) {//read from input stream
     int B, S;        //code for buffers and states
     char buf[20];   //input buffer
     int i, j;        //loop index variables
@@ -293,7 +293,7 @@ void bitspray::read(istream &inp) {//read from input stream
     }
 }
 
-//void bitspray::getBuf(ostream &out) {
+//void SDA::getBuf(ostream &out) {
 //  out << "Current Buffer: ";
 //  for (int i = hd; i < tl; ++i) {
 //    out << buf[i];

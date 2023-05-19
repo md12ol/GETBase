@@ -1,161 +1,176 @@
-#include <iostream>
 #include <cstdlib>
 #include <cstdio>
-#include <cmath>
 #include <iomanip>
 #include <string>
 #include <sys/stat.h>
 #include <bitset>
 #include <numeric>
-#include <algorithm>
-
-using namespace std;
 
 #include "setu.h"
 #include "stat.h"
-#include "bitspray.h"
+#include "SDA.h"
 
-/*************************algorithm controls******************************/
-#define PL 16
-#define NSE 30
-#define alpha 0.5
-#define mepl 3              //  Minimum epidemic length
-#define rse 5               //  Re-try short epidemics
-//#define ftl 50            //  Final test length
-#define verbose true
-#define runs 30
-#define mevs 10000
-#define RIs 100
-#define RE ((long)mevs/RIs)
-#define popsize 50
+// Generic Controls
+#define RNS 91207819                                // Random Number Seed
+#define verbose true                                // Print Information ot User?
+#define RIs 100                                     // Reporting Interval
+#define RE ((long)mevs/RIs)                         // Report Every
 #define verts 256
-#define RNS 91207819
-#define MNM 2
-#define tsize 7
 
-#define omega 0.5
+// Genetic Algorithm Controls
+#define popsize 50
+#define runs 30
+#define mevs 10000                                  // Number of Mating Events
+#define tsize 7                                     // Tournament Size
+#define MNM 2                                       // Maximum Number of Mutations
 
+// Epidemic Controls
+#define PL 16                                       // Profile Length
+#define NSE 30                                      // Number of Sample Epidemics
+#define alpha 0.5                                   // Probability of Infection
+#define mepl 3                                      // Minimum Epidemic Length
+#define rse 5                                       // Retries for Short Epidemics
+
+// Self-Driving Automata (SDA) Controls
 #define states 12
-#define Qz verts*(verts-1)/2 + 2
-int Q[Qz];
+#define stringLen verts*(verts-1)/2 + 2
 
-//#define ent_thres 1.0
-bool dead[popsize];
-double max_fit = verts;
-double min_fit = 0.0;
+// Genetic Algorithm Variables
+SDA *SDAPop[popsize];                               // Stores the Population of SDAs
+int netPop[popsize][stringLen - 2];                 // Stores the Upper Triangular Adjacency Matrices (UTAMs)
+double fit[popsize];                                // Fitness of each SDA
+bool dead[popsize];                                 // Which SDAs Failed the Necrotic Filter (true)
+int ctrlFitnessFctn;                                // Program Control for Which Fitness Function to Use
+double maxFit = verts;
+double minFit = 0.0;
 
-/**************************Variable dictionary************************/
-bitspray *bPop[popsize]; // Stores bitsprayers
-int pop[popsize][Qz - 2]; // Stores UTAM
-double fit[popsize];            //  Fitness array
-int b_epi[popsize];
-int dx[popsize];                //  Sorting index
-double PD[PL + 1];              //  Profile dictionary
-bool mde_prof;
-bool mde_var;
-bool mde_spread;
-int fitFun;
+// SDA Variables
+int SDAOutput[stringLen];                           // Stores the Output from an SDA
 
-// Variants
-int var_count;
-pair<int, int> bestEpi_varLens[max_vars];
-vector<int> bestEpi_varProfs[max_vars];
-int bestEpi_varCount;
-int bestEpi_varParents[max_vars];
-bitset<dna_len> bestEpi_varDNA[max_vars];
-double var_prob;
-int edit_lowB;
-int edit_upB;
+// Epidemic Variables
+int bestEpi[popsize];                               // Best Epidemic for each SDA
+double PD[PL + 1];                                  // Profile dictionary
+bool ctrlProfileMatching;                           // Program Control for Doing Profile Matching
+bool ctrlVariants;                                  // Program Control for Having Epidemic Variants
+bool ctrlEpiSpread;                                 // Program Control for Using Epidemic Spread Fitness
 
-/****************************Procedures********************************/
-void initalg(const char *pLoc);           //initialize the algorithm
-void initpop();                           //initialize population
-void matingevent();                       //run a mating event
-void report(ostream &aus);                //make a statistical report
-void reportbest(ostream &aus, ostream &difc);
-void createReadMe(ostream &aus);
-void cmdLineIntro(ostream &aus);
-void cmdLineRun(int run, ostream &aus);
-double fitness(int *upTri, int idx, bool final);
-double fitness(int idx, bitspray &A, bool final);
-void createUpTri(bitspray &A, int *upTri);
+// Epidemic Variants Variables
+int numVars;                                        // Number of Variants
+int bestVarCount;                                   // The Number of Variants in the Best Epidemic
+int bestVarParents[maxNumVars];                     // The Parents of Each Variant in the Best Epidemic
+pair<int, int> bestVarLens[maxNumVars];             // The Variant Lengths (start, end) for Variants in the Best Epidemic
+vector<int> bestVarProfs[maxNumVars];               // The Variant Profiles for the Variants in the Best Epidemic
+bitset<DNALen> bestVarDNA[maxNumVars];              // The Variant DNA Strings for the Variants in the Best Epidemic
+double variantProb;                                 // Probability of Generating a new Variant
+int minEdits;                                       // Minimum Number of Edits to New Variant String
+int maxEdits;                                       // Maximum Number of Edits to New Variant String
 
-/****************************Main Routine*******************************/
+// Other Variables
+int dx[popsize];                                    // Used to Sort the Population
+
+// Method Declarations
+void cmdLineIntro(ostream &aus);                    // Print Intro to User
+void createReadMe(ostream &aus);                    // Make readme.dat
+void cmdLineRun(int run, ostream &aus);             // Print Column Headers to User
+void initAlg(const char *pLoc);                     // Initialize the Algorithm
+void initPop();                                     // Initialize the Population
+void matingEvent();
+void createUpTri(SDA &A, int *upTri);               // Pull Output from the SDA and Generate the UTAM
+double fitnessPrep(int idx, SDA &A, bool final);    // Prepare to Calculate Fitness
+double fitness(int *upTri, int idx, bool final);    // Calculate the Fitness
+void report(ostream &aus);
+void reportBest(ostream &aus);
+
+/**
+ * Run the program: initialize a population, evolve the population for the specified number of mating events,
+ * and output results.  This will be repeated runs times.  The command line arguments are explained below:
+ * 1. The Output Root (usually "./Output/")
+ * 2. 0 -> No Variants (any fitness function); 1 -> Variants (only epidemic length or spread fitness)
+ * 3. The Probability of Generating a New Variant
+ * 4. Minimum Number of Edits to Variant String for a New Variant
+ * 5. Maximum Number of Edits to Variant String for a New Variant
+ * 6. 0 -> Profile Matching or Epidemic Length Fitness; 1 -> Epidemic Spread Fitness
+ * 7. 0 -> Epidemic Spread or Epidemic Length Fitness; 1 -> Profile Matching Fitness (w/o variants)
+ *
+ * Thus, for arguments 6 and 7 the possibilities are:
+ * Mode 0: 0, 0 -> Epidemic Length Fitness with or without Variants (see argument 2)
+ * Mode 1: 0, 1 -> Profile Matching Fitness without Variants
+ * Mode 2: 1, 0 -> Epidemic Spread Fitness with ot without Variants (see argument 2)
+ * Mode -1: 1, 1 -> Not Possible/Implemented TODO: Not Yet Implemented.
+ *
+ * @param argc Number of Command Line Variables
+ * @param argv Those Variables, Explained Above
+ * @return Hopefully a Zero :)
+ */
 int main(int argc, char *argv[]) {
-    /**
-     * Output Root, modeV, vProb, editLow, editUp, modeS, modeP
-     * nohup ./THADSNBit "./Output/" 1 ? ? ? 0 0 &
-     */
-
-    fstream stat, best, dchar, readme, iGOut;   //statistics, best structures
-    char fn[60];          //file name construction buffer
+    fstream stat, best, readme, iGOut;  // For File Output
+    char filename[60];                  // I Love C++!
     char *outLoc = new char[45];
-    char *outRoot = argv[1];
-    char *pLoc;
-    int pNum;
+    char *outRoot = argv[1];            // Root Directory for Output (usually ./Output/
+    char *pLoc;                         // Location of the Profile
+    int pNum;                           // Profile Number
 
-    //  With or without mde_var
-    mde_var = (int) strtol(argv[2], nullptr, 10) == 1;
-    var_prob = strtod(argv[3], nullptr);
-    edit_lowB = (int) strtol(argv[4], nullptr, 10);
-    edit_upB = (int) strtol(argv[5], nullptr, 10);
-    //  F -> Epidemic Length; T -> Epidemic Spread
-    mde_spread = (int) strtol(argv[6], nullptr, 10) == 1;
-    //  F -> Epidemic Length; T -> Profile Matching
-    mde_prof = (int) strtol(argv[7], nullptr, 10) == 1;
+    // Get Command Line Arguments
+    ctrlVariants = (int) strtol(argv[2], nullptr, 10) == 1;
+    variantProb = strtod(argv[3], nullptr);
+    minEdits = (int) strtol(argv[4], nullptr, 10);
+    maxEdits = (int) strtol(argv[5], nullptr, 10);
+    ctrlEpiSpread = (int) strtol(argv[6], nullptr, 10) == 1;
+    ctrlProfileMatching = (int) strtol(argv[7], nullptr, 10) == 1;
 
-    if (!mde_var) {
-        if (mde_prof) { // Profile matching without variants
-            fitFun = 1;
-        } else if (mde_spread) {
-            fitFun = 2; // Epidemic mde_spread without variants
+    // Determine Fitness Function
+    if (!ctrlVariants) {
+        if (ctrlProfileMatching) { // Mode 1: Profile Matching Fitness w/o Variants TODO: Not Yet Implemented.
+
+            ctrlFitnessFctn = 1;
+        } else if (ctrlEpiSpread) {
+            ctrlFitnessFctn = 2; // Mode 2: Epidemic Spread Fitness w/o Variants
         } else {
-            fitFun = 0; // Epidemic length without variants
+            ctrlFitnessFctn = 0; // Mode 0: Epidemic Length Fitness w/o Variants
         }
     } else {
-        if (mde_spread) {
-            fitFun = 2; // Epidemic mde_spread with variants
+        if (ctrlEpiSpread) {
+            ctrlFitnessFctn = 2; // Mode 2: Epidemic Spread Fitness with Variants
         } else {
-            fitFun = 0; // Epidemic length with variants
+            ctrlFitnessFctn = 0; // Mode 0: Epidemic Length Fitness with Variants
         }
     }
 
-    if (mde_prof) {
-        // TODO: Numbers are incorrect.
+    if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
         pLoc = argv[2];
         pNum = stoi(argv[3]);
     }
 
-    // Create directory for output
-    if (mde_prof) {
-        sprintf(outLoc, "%sOutput - Profile%d %dS, %02dP, %dM/",
-                outRoot, pNum, states, popsize, MNM);
-    } else if (mde_var) {
-        if (mde_spread) {
+    // Create Directory for Output
+    if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
+        sprintf(outLoc, "%sOutput - Profile%d %dS, %02dP, %dM/", outRoot, pNum, states, popsize, MNM);
+    } else if (ctrlVariants) {
+        if (ctrlEpiSpread) {
             sprintf(outLoc, "%sOutput - ES %03dP, %02dI, %.4f%%, %02d-%02dE/",
-                    outRoot, popsize, init_bits, var_prob, edit_lowB, edit_upB);
+                    outRoot, popsize, initOneBits, variantProb, minEdits, maxEdits);
         } else {
             sprintf(outLoc, "%sOutput - EL %03dP, %02dI, %.4f%%, %02d-%02dE/",
-                    outRoot, popsize, init_bits, var_prob, edit_lowB, edit_upB);
+                    outRoot, popsize, initOneBits, variantProb, minEdits, maxEdits);
         }
     } else {
-        if (mde_spread) {
-            sprintf(outLoc, "%sOutput - ES Base/",
-                    outRoot);
+        if (ctrlEpiSpread) {
+            sprintf(outLoc, "%sOutput - ES Base/", outRoot);
         } else {
-            sprintf(outLoc, "%sOutput - EL Base/",
-                    outRoot);
+            sprintf(outLoc, "%sOutput - EL Base/", outRoot);
         }
     }
     mkdir(outLoc, 0777);
 
-    initalg(pLoc);
-    sprintf(fn, "%sbest.lint", outLoc);
-    best.open(fn, ios::out);
-    sprintf(fn, "%sdifc.dat", outLoc);
-    dchar.open(fn, ios::out);
-    sprintf(fn, "%sreadme.dat", outLoc);
-    readme.open(fn, ios::out);
+    // Okay, Let's Get Started!
+    initAlg(pLoc);
+
+    // Determine the Location of the Different Output Files
+    sprintf(filename, "%sbest.dat", outLoc);
+    best.open(filename, ios::out);
+    sprintf(filename, "%sreadme.dat", outLoc);
+    readme.open(filename, ios::out);
+
+    // Generate the Readme File
     createReadMe(readme);
     readme.close();
 
@@ -165,59 +180,56 @@ int main(int argc, char *argv[]) {
     if (!verbose) {
         cout << "Started" << endl;
     }
-    for (int run = 0; run < runs; run++) {
-        sprintf(fn, "%srun%02d.dat", outLoc, run); // File name
-        stat.open(fn, ios::out);
+    for (int run = 1; run <= runs; run++) {
+        sprintf(filename, "%srun%02d.dat", outLoc, run);
+        stat.open(filename, ios::out);
         if (verbose) cmdLineRun(run, cout);
-        initpop();
-        report(stat); //report the statistics of the initial population
-        for (int mev = 0; mev < mevs; mev++) {//do mating events
-            matingevent();  //run a mating event
-            if ((mev + 1) % RE == 0) {//Time for a report?
+        initPop();
+        report(stat); // Initial Report
+        for (int mev = 0; mev < mevs; mev++) { // Evolve
+            matingEvent();
+            if ((mev + 1) % RE == 0) { // Is it time to report?
                 if (verbose) {
                     cout << left << setw(5) << run;
                     cout << left << setw(4) << (mev + 1) / RE;
                 }
-                report(stat); //report statistics
+                report(stat);
             }
         }
         stat.close();
-        reportbest(best, dchar);
-        cout << "Done run " << run << " of " << runs - 1 << endl;
+        reportBest(best);
+        cout << "Done run " << run << " of " << runs << endl;
     }
     best.close();
-    dchar.close();
     delete[] outLoc;
-    return (0);  //keep the system happy
+    return (0);
 }
 
 void createReadMe(ostream &aus) {
-    aus << "This file contains the info about the files in this folder." <<
-        endl;
+    aus << "This file contains the info about the files in this folder." << endl;
     aus << "Graph Evolution Tool." << endl;
-
     aus << "Fitness Function: ";
-    if (mde_prof) {
+    if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
         aus << "Profile Matching" << endl;
         aus << "Profile: ";
         for (double i: PD) {
             aus << i << " ";
         }
         aus << endl;
-    } else if (mde_spread) {
+    } else if (ctrlEpiSpread) {
         aus << "Epidemic Spread" << endl;
     } else {
         aus << "Epidemic Length" << endl;
     }
 
     aus << "Epidemic Model Used: ";
-    if (mde_var) {
+    if (ctrlVariants) {
         aus << "SIR with Variants" << endl;
     } else {
         aus << "SIR" << endl;
     }
 
-    aus << "Representation: Bitsprayers on Adjacency Matrix" << endl;
+    aus << "Representation: SDAs Filling an Adjacency Matrix" << endl;
     aus << endl;
     aus << "The parameter settings are as follows: " << endl;
     aus << "Number of sample epidemics: " << NSE << endl;
@@ -231,65 +243,65 @@ void createReadMe(ostream &aus) {
     aus << "Maximum number of mutations: " << MNM << endl;
     aus << "Tournament size: " << tsize << endl;
     aus << "Number of States: " << states << endl;
-//    aus << "Entropy Threshold for Necrotic Filter: " << ent_thres << endl;
-    aus << "Decay strength for diffusion characters: " << omega << endl;
-    aus << "Variant Probability: " << var_prob << endl;
-    aus << "Edit Range: " << edit_lowB << "-" << edit_upB << endl;
+    aus << "Variant Probability: " << variantProb << endl;
+    aus << "Edit Range: " << minEdits << " to " << maxEdits << endl;
     aus << endl;
     aus << "The file descriptions are as follows: " << endl;
-    aus << "best.lint -> the best fitness and it's associated data for each "
-           "run" << endl;
-    aus << "difc.dat -> the diffusion characters of the best graph for each "
-           "run" << endl;
+    aus << "best.dat -> the best fitness and it's associated data for each run" << endl;
     aus << "run##.dat -> population statistics for each run" << endl;
 }
 
 void cmdLineIntro(ostream &aus) {
     aus << "Graph Evolution Tool." << endl;
     aus << "Fitness Function: ";
-    if (mde_prof) {
+    if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
         aus << "Profile Matching" << endl;
         aus << "Profile: ";
         for (double i: PD) {
             aus << i << " ";
         }
         aus << endl;
-    } else if (mde_spread) {
+    } else if (ctrlEpiSpread) {
         aus << "Epidemic Spread" << endl;
     } else {
         aus << "Epidemic Length" << endl;
     }
 
     aus << "Epidemic Model Used: ";
-    if (mde_var) {
+    if (ctrlVariants) {
         aus << "SIR with Variants" << endl;
     } else {
         aus << "SIR" << endl;
     }
-    aus << "Representation: Bitsprayers on Adjacency Matrix" << endl;
-    aus << "Check readme.dat for more information about parameters/output.";
+    aus << "Representation: SDAs Filling an Adjacency Matrix" << endl;
+    aus << "Check readme.dat for more information about parameters and output.";
     aus << endl;
 }
 
 void cmdLineRun(int run, ostream &aus) {
-    aus << endl << "Beginning Run " << run << " of " << runs - 1 << endl;
+    aus << endl << "Beginning Run " << run << " of " << runs << endl;
     aus << left << setw(5) << "Run";
     aus << left << setw(4) << "RI";
     aus << left << setw(10) << "Mean";
     aus << left << setw(12) << "95% CI";
     aus << left << setw(10) << "SD";
-    aus << left << setw(8) << "Best";
+    aus << left << setw(12) << "Best Fit";
+    aus << left << setw(10) << "Best Epi";
+    aus << left << setw(8) << "# Dead";
     aus << endl;
     aus << left << setw(5) << run;
     aus << left << setw(4) << "0";
 }
 
-void initalg(const char *pLoc) {//initialize the algorithm
-    fstream inp;    //input file
-    char buf[20];   //input buffer
+void initAlg(const char *pLoc) {
+    srand48(RNS);
 
-    srand48(RNS);                 //read the random number seed
-    if (mde_prof) {
+    for (auto &i: SDAPop) {
+        i = new SDA(states);
+    }
+    if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
+        fstream inp;
+        char buf[20];
         inp.open(pLoc, ios::in);      //open input file
         for (int i = 0; i < PL; i++) {
             PD[i] = 0;  //pre-fill missing values
@@ -301,16 +313,13 @@ void initalg(const char *pLoc) {//initialize the algorithm
         }
         inp.close();
     }
-    for (auto &i: bPop) {
-        i = new bitspray(states);
-    }
 }
 
 bool necroticFilter(const int *upTri) {
-    int len = Qz - 2;
+    int len = stringLen - 2;
     int count[2] = {0, 0};
     int bounds[2] = {1 * verts, 6 * verts};
-    if (fitFun == 2) {
+    if (ctrlFitnessFctn == 2) {
         bounds[0] = 1 * verts;
         bounds[1] = 2.5 * verts;
     }
@@ -337,11 +346,11 @@ double fitness(int *upTri, int idx, bool final) {//compute the fitness
     double accu = 0.0;         //accumulator
     int best_epi = 0;
     vector<int> varBaseProf;
-    var_count = 0;
-    int var_parents[max_vars];
-    pair<int, int> var_lens[max_vars];
-    vector<int> var_profs[max_vars];
-    bitset<dna_len> variants[verts];
+    numVars = 0;
+    int var_parents[maxNumVars];
+    pair<int, int> var_lens[maxNumVars];
+    vector<int> var_profs[maxNumVars];
+    bitset<DNALen> variants[verts];
     vector<double> v_lengths;
     v_lengths.clear();
     v_lengths.reserve(NSE);
@@ -349,45 +358,45 @@ double fitness(int *upTri, int idx, bool final) {//compute the fitness
     v_spreads.clear();
     v_spreads.reserve(NSE);
 
-    if (fitFun == 0) { //  Epidemic length
+    if (ctrlFitnessFctn == 0) { //  Epidemic length
         for (en = 0; en < (final ? 10 * NSE : NSE); en++) {
             cnt = 0;
             do {
-                if (!mde_var) {
+                if (!ctrlVariants) {
                     G.SIR(0, max, len, ttl, alpha, varBaseProf);
                 } else {
-                    G.varSIR(0, var_count, var_profs, variants,
+                    G.varSIR(0, numVars, var_profs, variants,
                              var_parents, var_lens, 0.5,
-                             edit_lowB, edit_upB, var_prob);
+                             minEdits, maxEdits, variantProb);
                     v_lengths.clear();
-                    for (int i = 0; i <= var_count; i++) {
+                    for (int i = 0; i <= numVars; i++) {
                         v_lengths.push_back((double) (var_lens[i].second));
                     }
                     sort(v_lengths.begin(), v_lengths.end());
-                    len = (int) v_lengths.at(var_count);
+                    len = (int) v_lengths.at(numVars);
                 }
                 cnt++;
             } while (len < mepl && cnt < rse);
             if (final) {
-                if (!mde_var) {
+                if (!ctrlVariants) {
                     if (len > best_epi) {
                         best_epi = len;
-                        bestEpi_varCount = 0;
-                        bestEpi_varLens[0].first = 0;
-                        bestEpi_varLens[0].second = len;
-                        bestEpi_varProfs[0] = varBaseProf;
-                        bestEpi_varParents[0] = -1;
-                        bestEpi_varDNA[0] = bitset<dna_len>();
+                        bestVarCount = 0;
+                        bestVarLens[0].first = 0;
+                        bestVarLens[0].second = len;
+                        bestVarProfs[0] = varBaseProf;
+                        bestVarParents[0] = -1;
+                        bestVarDNA[0] = bitset<DNALen>();
                     }
                 } else {
                     if (len > best_epi) {
                         best_epi = len;
-                        for (int i = 0; i <= var_count; i++) {
-                            bestEpi_varCount = var_count;
-                            bestEpi_varLens[i] = var_lens[i];
-                            bestEpi_varProfs[i] = var_profs[i];
-                            bestEpi_varParents[i] = var_parents[i];
-                            bestEpi_varDNA[i] = variants[i];
+                        for (int i = 0; i <= numVars; i++) {
+                            bestVarCount = numVars;
+                            bestVarLens[i] = var_lens[i];
+                            bestVarProfs[i] = var_profs[i];
+                            bestVarParents[i] = var_parents[i];
+                            bestVarDNA[i] = variants[i];
                         }
                     }
                 }
@@ -405,9 +414,9 @@ double fitness(int *upTri, int idx, bool final) {//compute the fitness
                 accu += trial;
             }
             accu = accu / NSE;
-            b_epi[idx] = longest;
+            bestEpi[idx] = longest;
         }
-    } else if (fitFun == 1) { //  Profile matching
+    } else if (ctrlFitnessFctn == 1) { // Profile Matching
         for (en = 0; en < NSE; en++) {//loop over epidemics
             cnt = 0;
             do {
@@ -424,47 +433,47 @@ double fitness(int *upTri, int idx, bool final) {//compute the fitness
             }
             trials[en] = sqrt(trials[en] / len); //convert to RMS error
         }
-    } else { //  Epidemic mde_spread
+    } else { //  Epidemic Spread
         for (en = 0; en < (final ? 10 * NSE : NSE); en++) {
             cnt = 0;
             do {
-                if (!mde_var) {
+                if (!ctrlVariants) {
                     G.SIR(0, max, len, ttl, alpha, varBaseProf);
                 } else {
-                    G.varSIR(0, var_count, var_profs, variants,
+                    G.varSIR(0, numVars, var_profs, variants,
                              var_parents, var_lens, 0.5,
-                             edit_lowB, edit_upB, var_prob);
+                             minEdits, maxEdits, variantProb);
                     v_lengths.clear();
                     ttl = 0;
-                    for (int i = 0; i <= var_count; i++) {
+                    for (int i = 0; i <= numVars; i++) {
                         v_lengths.push_back((double) (var_lens[i].second));
                         ttl += accumulate(var_profs[i].begin(), var_profs[i].end(), 0);
                     }
                     sort(v_lengths.begin(), v_lengths.end());
-                    len = (int) v_lengths.at(var_count);
+                    len = (int) v_lengths.at(numVars);
                 }
                 cnt++;
             } while (len < mepl && cnt < rse);
             if (final) {
-                if (!mde_var) {
+                if (!ctrlVariants) {
                     if (ttl > best_epi) {
                         best_epi = ttl;
-                        bestEpi_varCount = 0;
-                        bestEpi_varLens[0].first = 0;
-                        bestEpi_varLens[0].second = len;
-                        bestEpi_varProfs[0] = varBaseProf;
-                        bestEpi_varParents[0] = -1;
-                        bestEpi_varDNA[0] = bitset<dna_len>();
+                        bestVarCount = 0;
+                        bestVarLens[0].first = 0;
+                        bestVarLens[0].second = len;
+                        bestVarProfs[0] = varBaseProf;
+                        bestVarParents[0] = -1;
+                        bestVarDNA[0] = bitset<DNALen>();
                     }
                 } else {
                     if (ttl > best_epi) {
                         best_epi = ttl;
-                        for (int i = 0; i < max_vars; i++) {
-                            bestEpi_varCount = var_count;
-                            bestEpi_varLens[i] = var_lens[i];
-                            bestEpi_varProfs[i] = var_profs[i];
-                            bestEpi_varParents[i] = var_parents[i];
-                            bestEpi_varDNA[i] = variants[i];
+                        for (int i = 0; i < maxNumVars; i++) {
+                            bestVarCount = numVars;
+                            bestVarLens[i] = var_lens[i];
+                            bestVarProfs[i] = var_profs[i];
+                            bestVarParents[i] = var_parents[i];
+                            bestVarDNA[i] = variants[i];
                         }
                     }
                 }
@@ -482,128 +491,125 @@ double fitness(int *upTri, int idx, bool final) {//compute the fitness
                 accu += trial;
             }
             accu = accu / NSE;
-            b_epi[idx] = furthest;
+            bestEpi[idx] = furthest;
         }
     }
     return accu;  //return the fitness value
 }
 
-void createUpTri(bitspray &A, int *upTri) {//unpack the queue
+void createUpTri(SDA &A, int *upTri) {//unpack the queue
     int h, t;  //head and tail of queue
 
-    for (t = 0; t < Qz; t++) {
-        Q[t] = 0;        //clear the queue
+    for (t = 0; t < stringLen; t++) {
+        SDAOutput[t] = 0;        //clear the queue
     }
-    A.reset(Q, h, t);     //reset the self driving automata
-    while (t < Qz - 2) {
-        A.next(Q, h, t, Qz);  //run the automata
+    A.reset(SDAOutput, h, t);     //reset the self driving automata
+    while (t < stringLen - 2) {
+        A.next(SDAOutput, h, t, stringLen);  //run the automata
     }
 
-    for (int i = 0; i < Qz - 2; i++) {
-        upTri[i] = Q[i];
+    for (int i = 0; i < stringLen - 2; i++) {
+        upTri[i] = SDAOutput[i];
     }
 }
 
-double fitness(int idx, bitspray &A, bool final) {
-    createUpTri(A, pop[idx]);
-    if (necroticFilter(pop[idx])) {
+double fitnessPrep(int idx, SDA &A, bool final) {
+    createUpTri(A, netPop[idx]);
+    if (necroticFilter(netPop[idx])) {
         dead[idx] = true;
-        if (fitFun == 0 || fitFun == 2) {
-            return min_fit;
+        if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) {
+            return minFit;
         } else {
-            return max_fit;
+            return maxFit;
         }
     }
-    double fi = fitness(pop[idx], idx, final);
+    double fi = fitness(netPop[idx], idx, final);
     return fi;
 }
 
 void printUpTri(int *upTri) {
-    for (int i = 0; i < Qz - 2; i++) {
+    for (int i = 0; i < stringLen - 2; i++) {
         cout << upTri[i] << " ";
     }
     cout << endl;
 }
 
-void initpop() {//initialize population
+void initPop() {
+    // Generate the Initial Population
     for (int i = 0; i < popsize; i++) {
         dead[i] = false;
-        bool cont = true;
         do {
-            bPop[i]->randomize();
-            createUpTri(*bPop[i], pop[i]);
-        } while (necroticFilter(pop[i]));
-//        printUpTri(pop[i]);
-//        graph G(verts);
-//        G.UTAM(pop[i]);
-//        G.write(cout);
-        fit[i] = fitness(i, *bPop[i], false);
-//        cout<<fit[i]<<endl;
+            SDAPop[i]->randomize();
+            createUpTri(*SDAPop[i], netPop[i]); // Stored in SDAOutput
+        } while (necroticFilter(netPop[i])); // Until the SDA Passes the Necrotic Filter
+        fit[i] = fitnessPrep(i, *SDAPop[i], false);
         dx[i] = i;
     }
-    if (fitFun == 0 || fitFun == 2) {
-        min_fit = fit[0];
+
+    // Determine the Min or Max fit
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) { // Maximizing Fitness
+        minFit = fit[0];
         for (double i: fit) {
-            if (i < min_fit) {
-                min_fit = i;
+            if (i < minFit) {
+                minFit = i;
             }
         }
-    } else {
-        max_fit = fit[0];
+    } else { // Minimizing Fitness
+        maxFit = fit[0];
         for (double i: fit) {
-            if (i > max_fit) {
-                max_fit = i;
+            if (i > maxFit) {
+                maxFit = i;
             }
         }
     }
 }
 
-void matingevent() {//run a mating event
+void matingEvent() {//run a mating event
     int rp;   //loop index, random position, swap variable
 
     //perform tournament selection
-    if (fitFun == 0 || fitFun == 2) { // duration, mde_spread
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) { // duration, ctrlEpiSpread
         tselect(fit, dx, tsize, popsize); // lowest first
     } else { // profile matching
         Tselect(fit, dx, tsize, popsize); // highest first
     }
 
-    bPop[dx[0]]->copy(*bPop[dx[tsize - 2]]);
-    bPop[dx[1]]->copy(*bPop[dx[tsize - 1]]);
-    bPop[dx[0]]->tpc(*bPop[dx[1]]);
+    SDAPop[dx[0]]->copy(*SDAPop[dx[tsize - 2]]);
+    SDAPop[dx[1]]->copy(*SDAPop[dx[tsize - 1]]);
+    SDAPop[dx[0]]->tpc(*SDAPop[dx[1]]);
     rp = (int) lrand48() % MNM + 1;
-    bPop[dx[0]]->mutate(rp);
+    SDAPop[dx[0]]->mutate(rp);
     rp = (int) lrand48() % MNM + 1;
-    bPop[dx[1]]->mutate(rp);
+    SDAPop[dx[1]]->mutate(rp);
     // reset dead SDAs
     dead[dx[0]] = false;
     dead[dx[1]] = false;
-    fit[dx[0]] = fitness(dx[0], *bPop[dx[0]], false);
-    fit[dx[1]] = fitness(dx[1], *bPop[dx[1]], false);
+    fit[dx[0]] = fitnessPrep(dx[0], *SDAPop[dx[0]], false);
+    fit[dx[1]] = fitnessPrep(dx[1], *SDAPop[dx[1]], false);
 }
 
 void culling() {
     for (int i = 0; i < popsize; i++) {
         if (dead[i]) {
             do {
-                bPop[i]->randomize();
-                createUpTri(*bPop[i], pop[i]);
-            } while (necroticFilter(pop[i]));
-            fit[i] = fitness(i, *bPop[i], false);
-            min_fit = fit[0];
+                SDAPop[i]->randomize();
+                createUpTri(*SDAPop[i], netPop[i]);
+            } while (necroticFilter(netPop[i]));
+            fit[i] = fitnessPrep(i, *SDAPop[i], false);
+            minFit = fit[0];
             dead[i] = false;
         }
     }
-    if (fitFun == 0 || fitFun == 2) {
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) {
         for (double i: fit) {
-            if (i < min_fit) {
-                min_fit = i;
+            if (i < minFit) {
+                minFit = i;
             }
         }
     } else {
         for (double i: fit) {
-            if (i > max_fit) {
-                max_fit = i;
+            if (i > maxFit) {
+                maxFit = i;
             }
         }
     }
@@ -617,6 +623,8 @@ void report(ostream &aus) {//make a statistical report
             deaths++;
         }
     }
+
+    // Gather the Fitness from the Alive Members of the Population
     double good_fit[popsize - deaths];
     for (double &i: good_fit) {
         i = 0.0;
@@ -628,53 +636,59 @@ void report(ostream &aus) {//make a statistical report
         }
     }
 
+    // Do the Stats!
     D.add(good_fit, popsize - deaths);
-    int b = 0;
-    if (fitFun == 0 || fitFun == 2) {
+
+    // Find the Best and Update the Fitness of Dead Members of the Population
+    int bestIdx = 0;
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) { // Maximizing
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] > fit[b]) {
-                b = i; //find best fitness
+            if (fit[i] > fit[bestIdx]) {
+                bestIdx = i;
             }
         }
-        if (D.Rmin() != min_fit) {
+        if (D.Rmin() != minFit) {
             for (int i = 0; i < popsize; i++) {
-                if (dead[i]) { // update min
+                if (dead[i]) { // Update to Minimum Fitness
                     fit[i] = D.Rmin();
                 }
             }
-            min_fit = D.Rmin();
+            minFit = D.Rmin();
         }
-    } else {
+    } else { // Minimizing
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] < fit[b]) {
-                b = i; //find best fitness
+            if (fit[i] < fit[bestIdx]) {
+                bestIdx = i; //find best fitness
             }
         }
-        if (D.Rmax() != max_fit) {
+        if (D.Rmax() != maxFit) {
             for (int i = 0; i < popsize; i++) {
-                if (dead[i]) { // update max
+                if (dead[i]) { // Update to Maximum Fitness
                     fit[i] = D.Rmax();
                 }
             }
-            max_fit = D.Rmax();
+            maxFit = D.Rmax();
         }
     }
 
-    //print report
-    if (fitFun == 0 || fitFun == 2) {
+    // Print Report
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) { // Maximizing
         aus << left << setw(10) << D.Rmu();
         aus << left << setw(12) << D.RCI95();
         aus << left << setw(10) << D.Rsg();
-        aus << left << setw(8) << D.Rmax() << " [" << b_epi[b] << "]";
-        aus << "\tDead:" << deaths << endl;
+        aus << left << setw(12) << D.Rmax();
+        aus << left << setw(10) << bestEpi[bestIdx];
+        aus << left<< setw(8) << deaths << endl;
         if (verbose) {
             cout << left << setw(10) << D.Rmu();
             cout << left << setw(12) << D.RCI95();
             cout << left << setw(10) << D.Rsg();
-            cout << left << setw(8) << D.Rmax() << " [" << b_epi[b] << "]";
-            cout << "\tDead: " << deaths << endl;
+            cout << left << setw(12) << D.Rmax();
+            cout << left << setw(10) << bestEpi[bestIdx];
+            cout << left << setw(8) << deaths << endl;
         }
-    } else {
+    } else { // Minimizing
+        // TODO: Not Yet Implemented.
         aus << left << setw(10) << D.Rmu();
         aus << left << setw(12) << D.RCI95();
         aus << left << setw(10) << D.Rsg();
@@ -690,114 +704,70 @@ void report(ostream &aus) {//make a statistical report
     }
 }
 
-void reportbest(ostream &aus, ostream &difc) {//report the best graph
-    int b;       //loop indices and best pointer
-    graph G(verts);  //scratch graph
+void reportBest(ostream &aus) {//report the best graph
+    int bestIdx;
+    graph G(verts);
     double En;
-    static double M[verts][verts];
-    static double Ent[verts];
 
-    b = 0;
-    if (fitFun == 0 || fitFun == 2) {
+    bestIdx = 0;
+    if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) { // Maximizing
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] > fit[b]) {
-                b = i; //find best fitness
+            if (fit[i] > fit[bestIdx]) {
+                bestIdx = i;
             }
         }
-    } else {
+    } else { // Minimizing
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] < fit[b]) {
-                b = i; //find best fitness
+            if (fit[i] < fit[bestIdx]) {
+                bestIdx = i;
             }
         }
     }
 
-    //output the fitness and the associated data
-    aus << fit[b] << " -fitness" << endl;
+    aus << "Best Fitness: " << fit[bestIdx] << endl;
 
-    fitness(b, *bPop[b], true);
+    // Print the Profiles
+    fitnessPrep(bestIdx, *SDAPop[bestIdx], true);
     aus << "Epidemic Profile" << endl;
-    if (mde_var) {
-        for (int i = 0; i <= bestEpi_varCount; i++) {
+    if (ctrlVariants) {
+        for (int i = 0; i <= bestVarCount; i++) {
             if (i == 0) {
                 aus << "NA-->" << "V" << left << setw(2) << i << "\t";
             } else {
-                aus << "V" << left << setw(2) << bestEpi_varParents[i] << "->V" << left << setw(2) << i << "\t";
+                aus << "V" << left << setw(2) << bestVarParents[i] << "->V" << left << setw(2) << i << "\t";
             }
-            aus << "[" << left << setw(3) << bestEpi_varLens[i].first << "-";
-            aus << left << setw(3) << bestEpi_varLens[i].second << "]:\t";
-            for (int j = 0; j < bestEpi_varLens[i].first; j++) {
+            aus << "[" << left << setw(3) << bestVarLens[i].first << "-";
+            aus << left << setw(3) << bestVarLens[i].second << "]:\t";
+            for (int j = 0; j < bestVarLens[i].first; j++) {
                 aus << "\t";
             }
-            for (int j = 0; j <= bestEpi_varLens[i].second - bestEpi_varLens[i].first; j++) {
-                aus << bestEpi_varProfs[i].at(j) << "\t";
+            for (int j = 0; j <= bestVarLens[i].second - bestVarLens[i].first; j++) {
+                aus << bestVarProfs[i].at(j) << "\t";
             }
             aus << endl;
         }
-        for (int i = 0; i <= bestEpi_varCount; i++) {
+        for (int i = 0; i <= bestVarCount; i++) {
             aus << "V" << i << "\t";
-            aus << bestEpi_varDNA[i] << endl;
+            aus << bestVarDNA[i] << endl;
         }
     } else {
         aus << left << setw(4) << "V0" << " ";
-        aus << "[" << left << setw(2) << bestEpi_varLens[0].first << " ";
-        aus << bestEpi_varLens[0].second << "]: ";
-        for (int j = 0; j <= bestEpi_varLens[0].second - bestEpi_varLens[0].first; j++) {
-            aus << bestEpi_varProfs[0].at(j) << " ";
+        aus << "[" << left << setw(2) << bestVarLens[0].first << " ";
+        aus << bestVarLens[0].second << "]: ";
+        for (int j = 0; j <= bestVarLens[0].second - bestVarLens[0].first; j++) {
+            aus << bestVarProfs[0].at(j) << " ";
         }
         aus << endl;
     }
 
     // Write the SDA
     aus << "Self-Driving Automata" << endl;
-    bPop[b]->print(aus);
+    SDAPop[bestIdx]->print(aus);
 
     G.empty(verts);
-    G.UTAM(pop[b]);
+    G.UTAM(netPop[bestIdx]);
     aus << "Graph" << endl;
     G.write(aus);
     aus << endl;
-
-    for (int i = 0; i < G.size(); i++) {
-        G.DiffChar(i, omega, M[i]);
-    }
-
-    for (int i = 0; i < G.size(); i++) {//loop over vertices
-        En = 0.0;  //prepare En for normalizing
-        for (int j = 0; j < G.size(); j++) {
-            En += M[i][j];  //total the amount of gas at vertex i
-        }
-        for (int j = 0; j < G.size(); j++) {
-            M[i][j] /= En;  //normalize so sum(gas)=1
-        }
-        En = 0.0;  //zero the entropy accumulator
-        for (int j = 0; j < G.size();
-             j++) {//build up the individual entropy terms
-            if (M[i][j] > 0) {
-                En += -M[i][j] * log(M[i][j]);  //this is entropy base E
-            }
-        }
-        Ent[i] = En / log(2);  //convert entropy to Log base 2
-    }
-
-    //Now sort the entropy vector
-    bool more;  //no swaps
-    do {//swap out-of-order entries
-        more = false;
-        for (int i = 0; i < G.size() - 1; i++) {
-            if (Ent[i] < Ent[i + 1]) {
-                En = Ent[i];
-                Ent[i] = Ent[i + 1];
-                Ent[i + 1] = En;  //swap
-                more = true;  //set the flag that a swap happened
-            }
-        }
-    } while (more); //until in order
-
-    difc << Ent[0];  //output first entropy value
-    for (int i = 1; i < G.size(); i++) {
-        difc << " " << Ent[i];  //output remaining values
-    }
-    difc << endl;  //end line
 }
 

@@ -495,29 +495,29 @@ int graph::RQquality(int v) {//index of quality or -1 if none left
 
 }
 
-int graph::RQquality(int *Q) {//as above, but initialize to Q -- size==V
+int graph::RQquality(int *Q) {//as above, but initialize to SDAOutput -- size==V
 
     if (nqual == MAXQ)return (-1);    //Sorry -- no qualities left
     quality[nqual] = new int[V];    //create an integer register for each vertex
-    for (int i = 0; i < V; i++)quality[nqual][i] = Q[i]; //initialize to Q
+    for (int i = 0; i < V; i++)quality[nqual][i] = Q[i]; //initialize to SDAOutput
     nqual++;                      //record that quality was allocated
     return (nqual - 1);              //return index of quality
 
 }
 
-void graph::RecordQ(int num, int *Q) {//assign Q to the quality in question
+void graph::RecordQ(int num, int *Q) {//assign SDAOutput to the quality in question
 
     if ((num < 0) || (num >= nqual))
         return;  //try to initialize a non-existant quality
-    for (int i = 0; i < V; i++)quality[num][i] = Q[i]; //set to Q
+    for (int i = 0; i < V; i++)quality[num][i] = Q[i]; //set to SDAOutput
 
 }
 
-void graph::RetrieveQ(int num, int *Q) {//get the values in the quality -> Q
+void graph::RetrieveQ(int num, int *Q) {//get the values in the quality -> SDAOutput
 
     if ((num < 0) || (num >= nqual))
         return;  //try to retrieve a non-existant quality
-    for (int i = 0; i < V; i++)Q[i] = quality[num][i]; //dump values into Q
+    for (int i = 0; i < V; i++)Q[i] = quality[num][i]; //dump values into SDAOutput
 
 }
 
@@ -1581,7 +1581,7 @@ graph::DiffChar(int v, double omega, double *dc) {//diffusion character at v
 
 //Quality and weight handling
 
-void graph::RecordQ(int num, int dex, int val) {//Q[num][dex]=val
+void graph::RecordQ(int num, int dex, int val) {//SDAOutput[num][dex]=val
 
     if ((num >= 0) && (num < MAXQ)
         && (quality[num] != 0)) {//if the quality is there
@@ -1601,7 +1601,7 @@ void graph::RecordW(int num, int dex, double val) {//W[num][dex]=val
     }
 }
 
-int graph::RetrieveQ(int num, int dex) {//return Q[num][dex]
+int graph::RetrieveQ(int num, int dex) {//return SDAOutput[num][dex]
 
     if ((num >= 0) && (num < MAXQ)
         && (quality[num] != 0)) {//if the quality is there
@@ -1612,7 +1612,7 @@ int graph::RetrieveQ(int num, int dex) {//return Q[num][dex]
     return -1;
 }
 
-double graph::RetrieveW(int num, int dex) {//return Q[num][dex]
+double graph::RetrieveW(int num, int dex) {//return SDAOutput[num][dex]
 
     if ((num >= 0) && (num < MAXQ)
         && (weights[num] != 0)) {//if the quality is there
@@ -1684,7 +1684,7 @@ void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha,
     delete[] nin;  //return storage for nin buffer
 }
 
-void graph::create_new_variant(bitset<dna_len> &orig, bitset<dna_len> &variant, vector<int> rv, int low_bnd, int up_bnd) {
+void graph::create_new_variant(bitset<DNALen> &orig, bitset<DNALen> &variant, vector<int> rv, int low_bnd, int up_bnd) {
     // Randomness
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
     shuffle(rv.begin(), rv.end(), default_random_engine(seed));
@@ -1700,23 +1700,23 @@ void graph::create_new_variant(bitset<dna_len> &orig, bitset<dna_len> &variant, 
 }
 
 struct sort_pred {
-  bool operator()(const std::pair<double, pair<int, bitset<dna_len>>> &left,
-                  const std::pair<double, pair<int, bitset<dna_len>>> &right) {
+  bool operator()(const std::pair<double, pair<int, bitset<DNALen>>> &left,
+                  const std::pair<double, pair<int, bitset<DNALen>>> &right) {
       return left.first < right.first;
   }
 };
 
-void graph::varInfected(bitset<dna_len> &immunity, vector<pair<int, bitset<dna_len>>> &strains, double alpha, int &str_id) {
+void graph::varInfected(bitset<DNALen> &immunity, vector<pair<int, bitset<DNALen>>> &strains, double alpha, int &str_id) {
     int one_cnt;
     int potent_ones;
     int max_ones = 0;
     int worst_str = 0;
     immunity.flip();
-    vector<pair<double, pair<int, bitset<dna_len>>>> serv_strains;
+    vector<pair<double, pair<int, bitset<DNALen>>>> serv_strains;
     // Find worst strain
     for (auto &strain: strains) {
         one_cnt = (int) strain.second.count();
-        bitset<dna_len> tmp = strain.second & immunity;
+        bitset<DNALen> tmp = strain.second & immunity;
         potent_ones = (int) tmp.count();
         serv_strains.emplace_back((double) potent_ones / one_cnt, (strain));
     }
@@ -1732,21 +1732,21 @@ void graph::varInfected(bitset<dna_len> &immunity, vector<pair<int, bitset<dna_l
 }
 
 //Sir w Variants
-void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> variants[], int vorigs[], pair<int, int> vtimes[], double alpha, int lB, int uB, double var_prob) {
+void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<DNALen> variants[], int vorigs[], pair<int, int> vtimes[], double alpha, int lB, int uB, double var_prob) {
     if ((V == 0) || (p0 < 0) || (p0 >= V))return;
 
     int NI;     //number of infected individuals
-    int new_inf[max_vars];
-    bitset<dna_len> immunity[V];
+    int new_inf[maxNumVars];
+    bitset<DNALen> immunity[V];
     int inf_with[V];
     vector<int> randVec;
     int day = 0;
     vector<vector<int>> inf_neigh; // Nodes that are adjacent and can infect
     // Strins adjacent to susceptible node
-    vector<pair<int, bitset<dna_len>>> strains;
+    vector<pair<int, bitset<DNALen>>> strains;
     int strain_id;
 
-    // Setup immunity and mde_var
+    // Setup immunity and ctrlVariants
     for (int i = 0; i < V; ++i) {
         inf_with[i] = -1;
         immunity[i].reset();
@@ -1754,8 +1754,8 @@ void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> vari
     }
 
     // Setup rand
-    randVec.reserve(dna_len);
-    for (int i = 0; i < dna_len; i++) {
+    randVec.reserve(DNALen);
+    for (int i = 0; i < DNALen; i++) {
         randVec.push_back(i);
     }
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
@@ -1763,14 +1763,14 @@ void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> vari
             default_random_engine(seed));
 
     // Make initial variant
-    for (int i = 0; i < init_bits; i++) {
+    for (int i = 0; i < initOneBits; i++) {
         variants[0].set(randVec.at(i));
     }
 
-    for (int i = 0; i < max_vars; i++) {
+    for (int i = 0; i < maxNumVars; i++) {
         vorigs[i] = -2;
         vprofs[i] = (vector<int>) {};
-        vprofs[i].reserve(max_len);
+        vprofs[i].reserve(maxEpiLen);
         vtimes[i].first = -1;
         vtimes[i].second = -1;
         new_inf[i] = 0;
@@ -1792,7 +1792,7 @@ void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> vari
         // Clear infected neighbours
         inf_neigh.clear();
         day++;
-        if (day == max_len) {
+        if (day == maxEpiLen) {
             cout << "ERROR: Epidemic Length exceeds Maximum Epidemic Length" << endl;
         }
         for (int i = 0; i < V; i++) {
@@ -1827,7 +1827,7 @@ void graph::varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> vari
                     // New variant?
                     if (var_prob > 0 && drand48() < var_prob) { // Yes
                         vcnt++;
-                        if (vcnt == max_vars) {
+                        if (vcnt == maxNumVars) {
                             cout << "ERROR: Variant Count exceeds Maximum Variants" << endl;
                         }
                         create_new_variant(variants[strain_id],

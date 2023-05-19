@@ -2,15 +2,12 @@
 
 using namespace std;
 
-//The is the number of new vertices created when a set enlarges
 #define SETINCR 10
 
-#define dna_len (int)128
-#define init_bits (int)32
-// TODO: Update below?
-// Comment
-#define max_vars (int)64
-#define max_len (int)128
+#define DNALen (int)128
+#define initOneBits (int)32
+#define maxNumVars (int)64
+#define maxEpiLen (int)128
 
 //fitness proportional selector used in simulations
 int rselect(double *v, double ttl, int N);
@@ -91,11 +88,11 @@ class graph {
 
   //RQ means request
   int RQquality(int v);      //index of quality or -1 if none left  init to v
-  int RQquality(int *Q);     //as above, but initialize to Q  Sive is V
-  void RecordQ(int num, int *Q);   //assign Q to the quality in question
-  void RetrieveQ(int num, int *Q); //get the values in the quality -> Q
-  void RecordQ(int num, int dex, int val);    //Q[num][dex]=val
-  int RetrieveQ(int num, int dex);           //return Q[num][dex]
+  int RQquality(int *Q);     //as above, but initialize to SDAOutput  Sive is V
+  void RecordQ(int num, int *Q);   //assign SDAOutput to the quality in question
+  void RetrieveQ(int num, int *Q); //get the values in the quality -> SDAOutput
+  void RecordQ(int num, int dex, int val);    //SDAOutput[num][dex]=val
+  int RetrieveQ(int num, int dex);           //return SDAOutput[num][dex]
 
   //RQ means request
   int RQweight(double v);   //index of quality or -1 if none left  init to v
@@ -103,14 +100,14 @@ class graph {
   void RecordW(int num, double *W);   //assign W to the weight in question
   void RetrieveW(int num, double *W); //get the values in the quality -> W
   void RecordW(int num, int dex, double val); //W[num][dex]=val
-  double RetrieveW(int num, int dex);        //return Q[num][dex]
+  double RetrieveW(int num, int dex);        //return SDAOutput[num][dex]
 
   int infected(int n, double alpha); //SIR utility routine
-  void varInfected(bitset<dna_len> &immunity,
-                   vector<pair<int, bitset<dna_len>>> &strains,
+  void varInfected(bitset<DNALen> &immunity,
+                   vector<pair<int, bitset<DNALen>>> &strains,
                    double alpha, int &str_id);
-  static void create_new_variant(bitset<dna_len> &orig,
-                                 bitset<dna_len> &variant, vector<int> rv,
+  static void create_new_variant(bitset<DNALen> &orig,
+                                 bitset<DNALen> &variant, vector<int> rv,
                                  int low_bnd, int up_bnd);
 
   //initializers
@@ -196,7 +193,7 @@ class graph {
    */
   void SIR(int p0, int &max, int &len, int &ttl, double alpha, vector<int> &prof); //SIR method
   void SIRProfile(int p0, int &max, int &len, int &ttl, double alpha, double *prof); //Sir Method, with profile
-  void varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<dna_len> variants[], int *vorigs, pair<int, int> vtimes[], double alpha, int lB, int uB, double var_prob);
+  void varSIR(int p0, int &vcnt, vector<int> vprofs[], bitset<DNALen> variants[], int *vorigs, pair<int, int> vtimes[], double alpha, int lB, int uB, double var_prob);
 
   /*SIRr is the same as SIR except that patient zero is assigned at random*/
   void SIRr(int &max, int &len, int &ttl, double alpha); //SIR method
