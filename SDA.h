@@ -1,48 +1,39 @@
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <vector>
+
 using namespace std;
 
-class SDA {//self driving automata bit generator class
+class SDA {
+public:
+    SDA();           //creates an unallocated bitspray
+    explicit SDA(int states, int numChars, int len);      //create a bitspray with buffer S states
+    SDA(SDA &other);  //copy constructor
+    ~SDA();                //destructor
 
- public:
+    int create();
+    int randomize();
+    int copy(SDA &other);
+    int print();
+    int print(ostream &aus);
+    static int destroy();
+    int twoPtCrossover(SDA &other);
+    int oneStateCrossover(SDA &other);
+    int mutate(int numMuts);
+    int getBitsVec(int len, vector<int> &rtn);
+    int printBitsVec(int len, ostream &aus);
 
-  SDA();           //creates an unallocated SDA
-  SDA(int S);      //create a SDA with buffer S states
-  SDA(SDA &other);  //copy constructor
-  ~SDA();                //destructor
-
-  //utility routines
-  void create(int S);         //allocate S states
-  void randomize();           //fill in new random values
-  void copy(SDA &other); //copy routine
-  void destroy();             //deallocate
-
-  //use routines
-  void reset(int *Q, int &H, int &T); //reset to initial state
-//  int bit();                  //get the next bit
-//  int val(int b);             //return an integer value based on b bits
-//  double rel(int b);          //return a [0,1) value based on b bits
-
-  //Genetics
-  void tpc(SDA &other);        //two point crossover
-  void mutate(int nm);              //mutate a response or transition
-
-  //Input/Output
-  void print(ostream &aus);    //write in human readable form
-  void write(ostream &aus);    //write to output stream
-  void read(istream &inp);     //read from input stream
-//  void getBuf(ostream &out);   //print out the current buffer from hd to tl
-//  bool hasnext(int b) const;         //more room in buffer
-  void next(int *Q, int &H, int &T, int qz); //add next value(s) to SDAOutput
-
- private:
-
-  //Nb==0 is the unallocated tag
-  int init;     //initial output
-//  int Nb;       //size of the buffer for output that is not yet input
-//  int *buf;     //buffer for output
-  int St;       //number of states
-  int cs;       //current state
-//  int hd, tl;    //pointer to buffered output, head, tail
-  int **trans;  //transitions  [n][2]
-  int **resp;   //responses     [n][*]Nabcde...   N is length of response
-
+private:
+    int initInput;
+    int numStates;
+    int initState;
+    int curState;
+    int numChars;
+    double zeroProb = 0.95;
+    vector<int> buf;
+    vector<vector<int> > transitions;
+    vector<vector<vector<int> > > responses;
 };
