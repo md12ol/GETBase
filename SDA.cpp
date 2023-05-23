@@ -191,7 +191,7 @@ int SDA::twoPtCrossover(SDA &other) {
     return 0;
 }
 
-int SDA::oneStateCrossover(SDA &other){
+int SDA::oneStateCrossover(SDA &other) {
     int state, swapInt;
     vector<int> swapVec;
 
@@ -253,7 +253,7 @@ int SDA::getBitsVec(int len, vector<int> &rtn) {
         nextBit = rtn[tail];
         tail += 1;
         for (int i: responses[curState][nextBit]) {
-            if (head < len){
+            if (head < len) {
                 rtn[head] = i;
                 head += 1;
             }

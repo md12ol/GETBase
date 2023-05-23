@@ -76,7 +76,6 @@ Graph G(verts);
 vector<int> vals;
 vector<int> profile;
 
-
 // Method Declarations
 int getArgs(char *args[]);                          // Get Command Line Arguments
 void cmdLineIntro(ostream &aus);                    // Print Intro to User
@@ -374,7 +373,7 @@ void initPop() {
         dead[i] = false;
         SDAPop[i].create();
         SDAPop[i].getBitsVec(size, vals);
-        while (necroticFilter()){
+        while (necroticFilter()) {
             SDAPop[i].randomize();
             SDAPop[i].getBitsVec(size, vals);
         }
@@ -643,7 +642,7 @@ void reportBest(ostream &aus) {//report the best graph
     aus << "Self-Driving Automata" << endl;
     SDAPop[bestIdx].print(aus);
 
-    SDAPop[bestIdx].getBitsVec(stringLen-2, vals);
+    SDAPop[bestIdx].getBitsVec(stringLen - 2, vals);
     G.fill(vals, diagFill);
     aus << "Graph" << endl;
     G.print(aus);
