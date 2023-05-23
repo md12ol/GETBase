@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <bitset>
 #include <numeric>
+#include <algorithm>
 
 #include "setu.h"
 #include "stat.h"
