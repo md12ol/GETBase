@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     // Determine Fitness Function
     if (!ctrlVariants) {
-        if (ctrlProfileMatching) { 
+        if (ctrlProfileMatching) {
             ctrlFitnessFctn = 1; // Mode 1: Profile Matching Fitness w/o Variants TODO: Not Yet Implemented.
         } else if (ctrlEpiSpread) {
             ctrlFitnessFctn = 2; // Mode 2: Epidemic Spread Fitness w/o Variants
@@ -79,9 +79,6 @@ int main(int argc, char *argv[]) {
     }
     mkdir(pathToOut, 0777);
 
-    // Okay, Let's Get Started!
-    initAlg(pLoc);
-
     // Determine the Location of the Different Output Files
     sprintf(filename, "%sbest.dat", pathToOut);
     expStats.open(filename, ios::out);
@@ -91,6 +88,9 @@ int main(int argc, char *argv[]) {
     // Generate the Readme File
     createReadMe(readMe);
     readMe.close();
+
+    // Okay, Let's Get Started!
+    initAlg(pLoc);
     cmdLineIntro(cout);
 
     for (int run = 1; run <= runs; run++) {
@@ -101,10 +101,10 @@ int main(int argc, char *argv[]) {
         report(runStats); // Initial Report
         for (int mev = 0; mev < generations; mev++) { // Evolution
             matingEvent();
-            if ((mev + 1) % RE == 0) { // Is it time to report?
+            if ((mev + 1) % reportEvery == 0) { // Is it time to report?
                 if (verbose) {
                     cout << left << setw(5) << run;
-                    cout << left << setw(4) << (mev + 1) / RE;
+                    cout << left << setw(4) << (mev + 1) / reportEvery;
                 }
                 report(runStats);
             }
