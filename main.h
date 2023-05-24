@@ -15,7 +15,7 @@ int seed = 9107819;                                 // Random Number Seed
 bool verbose = true;                                // Print Information to User?
 const int numNodes = 256;
 
-// Genetic Algorithm Controls
+// Genetic Algorithm Controls 
 const int popsize = 50;
 const int runs = 30;
 const int generations = 10000;                      // Number of Mating Events
@@ -35,10 +35,11 @@ const int shortEpiRetrys = 5;                       // Retries for Short Epidemi
 const int SDANumStates = 12;
 const int SDAOutLen = numNodes * (numNodes - 1) / 2 + 2;
 
+// Variant Controls
 const int DNALen = 128;
-int initOneBits = 32;
+const int initOneBits = 32;
 const int maxNumVars = 64;
-int maxEpiLen = 128;
+const int maxEpiLen = 128;
 
 // Genetic Algorithm Variables
 SDA *SDAPop;                                        // Stores the Population of SDAs
@@ -66,11 +67,11 @@ int minEdits;                                       // Minimum Number of Edits t
 int maxEdits;                                       // Maximum Number of Edits to New Variant String
 
 // Other Variables
-char outRoot[20] = "./Output/";                // The Root Output Directory
+char outRoot[20] = "./Output/";                     // The Root Output Directory
 char pathToOut[150];                                // Variable to Store Path to Output for Opening File Streams
 static bool diagFill = true;                        // Should the SDA Fill the UTAM Diagonally
 Graph G(numNodes);
-vector<int> vals;
+vector<int> SDAOutput;
 vector<int> profile;
 
 // Method Declarations
@@ -82,7 +83,7 @@ void initAlg(const char *pLoc);                     // Initialize the Algorithm
 void initPop();                                     // Initialize the Population
 void matingEvent();
 double fitnessPrep(int idx, SDA &A, bool final);    // Prepare to Calculate Fitness
-double fitness(int idx, bool final);    // Calculate the Fitness
+double fitness(int idx, bool final);                // Calculate the Fitness
 void report(ostream &aus);
 void reportBest(ostream &aus);
 
@@ -186,9 +187,9 @@ void initAlg(const char *pLoc) {
     for (int idx = 0; idx < maxEpiLen; ++idx) {
         profile.push_back(-1);
     }
-    vals.reserve(SDAOutLen - 2);
+    SDAOutput.reserve(SDAOutLen - 2);
     for (int i = 0; i < SDAOutLen - 2; ++i) {
-        vals.push_back(-1);
+        SDAOutput.push_back(-1);
     }
 
     if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
@@ -292,7 +293,7 @@ bool necroticFilter() {
     int bounds[2] = {1 * numNodes, 6 * numNodes};
 
     for (int i = 0; i < len; i++) {
-        count[vals[i]]++;
+        count[SDAOutput[i]]++;
     }
     if (count[1] < bounds[0] || count[1] > bounds[1]) {
         return true; // DEAD
@@ -302,7 +303,7 @@ bool necroticFilter() {
 }
 
 double fitness(int idx, bool final) {//compute the fitness
-    G.fill(vals, diagFill);
+    G.fill(SDAOutput, diagFill);
     int len, ttl;   //maximum, length, and total removed
     int cnt;             //counter for tries
     double trials[numSampEpis];  //stores squared error for each trial
@@ -350,7 +351,7 @@ double fitness(int idx, bool final) {//compute the fitness
 }
 
 double fitnessPrep(int idx, SDA &A, bool final) {
-    A.getBitsVec(SDAOutLen - 2, vals);
+    A.getBitsVec(SDAOutLen - 2, SDAOutput);
     if (necroticFilter()) {
         dead[idx] = true;
         if (ctrlFitnessFctn == 0 || ctrlFitnessFctn == 2) {
@@ -371,10 +372,10 @@ void initPop() {
     for (int i = 0; i < popsize; i++) {
         dead[i] = false;
         SDAPop[i].create();
-        SDAPop[i].getBitsVec(size, vals);
+        SDAPop[i].getBitsVec(size, SDAOutput);
         while (necroticFilter()) {
             SDAPop[i].randomize();
-            SDAPop[i].getBitsVec(size, vals);
+            SDAPop[i].getBitsVec(size, SDAOutput);
         }
         fit[i] = fitnessPrep(i, SDAPop[i], false);
     }
@@ -438,25 +439,29 @@ int printIdxsOfVector(T1 &outp, vector<T2> vec, const vector<int> &idxs, const s
 }
 
 void matingEvent() {//run a mating event
-    int rp;   //loop index, random position, swap variable
+    int numMuts;   //loop index, random position, swap variable
     vector<int> tournIdxs;
+    // Selection
     tournIdxs = tournSelect(tournSize, ctrlFitnessFctn == 1); // TODO: Will not work for profile matching.
 
 //    printIdxsOfVector(cout, fit, tournIdxs, "Fit Vals in T: ", ", ", true);
 
+    // Crossover
     SDAPop[tournIdxs[0]].copy(SDAPop[tournIdxs[tournSize - 2]]);
     SDAPop[tournIdxs[1]].copy(SDAPop[tournIdxs[tournSize - 1]]);
     SDAPop[tournIdxs[0]].twoPtCrossover(SDAPop[tournIdxs[1]]);
-    rp = (int) lrand48() % maxMuts + 1;
-    SDAPop[tournIdxs[0]].mutate(rp);
-    rp = (int) lrand48() % maxMuts + 1;
-    SDAPop[tournIdxs[1]].mutate(rp);
+
+    // Mutation
+    numMuts = (int) lrand48() % maxMuts + 1;
+    SDAPop[tournIdxs[0]].mutate(numMuts);
+    numMuts = (int) lrand48() % maxMuts + 1;
+    SDAPop[tournIdxs[1]].mutate(numMuts);
 
     // reset dead SDAs
     int size = SDAOutLen - 2;
-    SDAPop[tournIdxs[1]].getBitsVec(size, vals);
+    SDAPop[tournIdxs[0]].getBitsVec(size, SDAOutput);
     dead[tournIdxs[0]] = necroticFilter();
-    SDAPop[tournIdxs[1]].getBitsVec(size, vals);
+    SDAPop[tournIdxs[1]].getBitsVec(size, SDAOutput);
     dead[tournIdxs[1]] = necroticFilter();
 
     if (!dead[tournIdxs[0]]) {
@@ -641,8 +646,8 @@ void reportBest(ostream &aus) {//report the best graph
     aus << "Self-Driving Automata" << endl;
     SDAPop[bestIdx].print(aus);
 
-    SDAPop[bestIdx].getBitsVec(SDAOutLen - 2, vals);
-    G.fill(vals, diagFill);
+    SDAPop[bestIdx].getBitsVec(SDAOutLen - 2, SDAOutput);
+    G.fill(SDAOutput, diagFill);
     aus << "Graph" << endl;
     G.print(aus);
     aus << endl;

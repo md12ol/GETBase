@@ -13,25 +13,34 @@
  * Thus, for arguments 5 and 6 the possibilities are:
  * Mode 0: 0, 0 -> Epidemic Length Fitness with or without Variants (see argument 1)
  * Mode 1: 0, 1 -> Profile Matching Fitness without Variants
- * Mode 2: 1, 0 -> Epidemic Spread Fitness with ot without Variants (see argument 1)
+ * Mode 2: 1, 0 -> Epidemic Spread Fitness with or without Variants (see argument 1)
  * Mode -1: 1, 1 -> Not Possible/Implemented TODO: Not Yet Implemented.
  *
  * @param argc Number of Command Line Arguments
  * @param argv Those Arguments, Explained Above
  * @return Hopefully a Zero :)
  */
+
+/**
+ * Initial Variant String:  1 1 1 0 1 0 1 0 0 1 1
+ * Edits: 3                       X     X     X
+ * New Variant String:      1 1 1 1 1 0 0 0 0 0 1
+*/
+
 int main(int argc, char *argv[]) {
     char filename[200];
     fstream runStats, expStats, readMe; // For File Output
     char *pLoc;                         // Location of the Profile
     int pNum;                           // Profile Number
 
+    // Get the command line arguments and place them in their corresponding variables.
     getArgs(argv);
+    // ctrlVariants, variantProb, minEdits, maxEdits, ctrlEpiSpread, ctrlProfileMatching
 
     // Determine Fitness Function
     if (!ctrlVariants) {
-        if (ctrlProfileMatching) { // Mode 1: Profile Matching Fitness w/o Variants TODO: Not Yet Implemented.
-            ctrlFitnessFctn = 1;
+        if (ctrlProfileMatching) { 
+            ctrlFitnessFctn = 1; // Mode 1: Profile Matching Fitness w/o Variants TODO: Not Yet Implemented.
         } else if (ctrlEpiSpread) {
             ctrlFitnessFctn = 2; // Mode 2: Epidemic Spread Fitness w/o Variants
         } else {
@@ -88,9 +97,9 @@ int main(int argc, char *argv[]) {
         sprintf(filename, "%srun%02d.dat", pathToOut, run);
         runStats.open(filename, ios::out);
         if (verbose) cmdLineRun(run, cout);
-        initPop();
+        initPop(); // Initialization
         report(runStats); // Initial Report
-        for (int mev = 0; mev < generations; mev++) { // Evolve
+        for (int mev = 0; mev < generations; mev++) { // Evolution
             matingEvent();
             if ((mev + 1) % RE == 0) { // Is it time to report?
                 if (verbose) {
