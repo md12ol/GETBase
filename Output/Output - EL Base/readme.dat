@@ -1,4 +1,4 @@
-This file contains the info about the files in this folder.
+This file contains the info about the files in this folder and the parameter settings for this experiment.
 Graph Evolution Tool.
 Fitness Function: Epidemic Length
 Epidemic Model Used: SIR
@@ -17,7 +17,7 @@ Maximum number of mutations: 2
 Tournament size: 7
 Number of States: 12
 Variant Probability: 0.01
-Edit Range: 8 to 12
+Edit Range: 12 to 20
 
 The file descriptions are as follows: 
 best.dat -> the best fitness and it's associated data for each run
