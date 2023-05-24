@@ -27,7 +27,7 @@ SDA::SDA(int states, int numChars, int len) {
         v.reserve(numChars);
     }
 
-    if (VERBOSEBIT) cout << "SDA Made w " << states << " states" << endl;
+    if (VERBOSEBIT) cout << "SDA Made w " << states << " SDANumStates" << endl;
 }
 
 SDA::SDA(SDA &other) {
@@ -139,10 +139,10 @@ int SDA::print(ostream &aus) {
         }
     }
     if (transitions.size() > numStates) {
-        aus << "ERROR!  More transitions than the number of states!" << endl;
+        aus << "ERROR!  More transitions than the number of SDANumStates!" << endl;
     }
     if (responses.size() > numStates) {
-        aus << "ERROR!  More responses than the number of states!" << endl;
+        aus << "ERROR!  More responses than the number of SDANumStates!" << endl;
     }
     if (VERBOSEBIT) cout << "SDA Printed" << endl;
     return 0;

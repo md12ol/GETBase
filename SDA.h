@@ -10,7 +10,7 @@ using namespace std;
 class SDA {
 public:
     SDA();           //creates an unallocated bitspray
-    explicit SDA(int states, int numChars, int len);      //create a bitspray with buffer S states
+    explicit SDA(int states, int numChars, int len);      //create a bitspray with buffer S SDANumStates
     SDA(SDA &other);  //copy constructor
     ~SDA();                //destructor
 

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
     // Create Directory for Output
     if (ctrlProfileMatching) { // TODO: Not Yet Implemented.
-        sprintf(pathToOut, "%sOutput - Profile%d %dS, %02dP, %dM/", outRoot, pNum, states, popsize, maxMuts);
+        sprintf(pathToOut, "%sOutput - Profile%d %dS, %02dP, %dM/", outRoot, pNum, SDANumStates, popsize, maxMuts);
     } else if (ctrlVariants) {
         if (ctrlEpiSpread) {
             sprintf(pathToOut, "%sOutput - ES %03dP, %02dI, %.4f%%, %02d-%02dE/",
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         if (verbose) cmdLineRun(run, cout);
         initPop();
         report(runStats); // Initial Report
-        for (int mev = 0; mev < mevs; mev++) { // Evolve
+        for (int mev = 0; mev < generations; mev++) { // Evolve
             matingEvent();
             if ((mev + 1) % RE == 0) { // Is it time to report?
                 if (verbose) {
