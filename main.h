@@ -387,7 +387,7 @@ double fitness(int idx, bool final) {//compute the fitness
                 cnt = 0;
                 do {
                     ttl = 0;
-                    len = network.SIR(alpha, 0, simProfile, ttl);
+                    len = network.SIR(0, alpha, simProfile, ttl);
                     cnt += 1;
                 } while (len < minEpiLen && cnt < shortEpiRetrys);
                 if (final) {
