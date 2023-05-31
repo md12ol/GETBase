@@ -2,6 +2,13 @@
 
 #include <random>
 
+int Graph::Test(int num) {
+    cout << "Hello World! this is my first C++ in VS"<< endl;
+    cout << "passed an int: " << num << endl;
+    return 0;
+}
+
+
 Graph::Graph() {
     numNodes = 0;
     numEdges = 0;
@@ -9,7 +16,15 @@ Graph::Graph() {
     maxWeight = 0;
 }
 
+
+/**
+ * The program creates a graph similar to cyberbattlesim but for an epidemic insead of a computer network
+*/
+
 Graph::Graph(int numNodes) {
+    
+    Test(numNodes);// use test to determine where I am in the code
+    
     this->numNodes = numNodes;
     numEdges = 0;
     totWeight = 0;
@@ -33,7 +48,7 @@ Graph::Graph(int numNodes) {
     }
 }
 
-int Graph::fill(const vector<int> &weights, bool diag) {
+int Graph::fill(const vector<int> &weights, bool diag) {// pass vector containing weights and a boolean value (see Main.h line 364)
     int nn = quadForm(1, -1, (-1) * (int) weights.size() * 2);
     if (nn != numNodes) {
         cout << "ERROR!  numNodes does not match length of vector provided to fill(...) method!!" << endl;

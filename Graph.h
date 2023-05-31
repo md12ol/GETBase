@@ -20,6 +20,7 @@ public:
     Graph();
     explicit Graph(int nn);
 
+    int Test(int numNodes);
     vector<int> fill(const string filename);
     int fill(const vector<int> &weights, bool diag);
     int SIR(int p0, double alpha, vector<int> &epiProfile, int &totInf);
