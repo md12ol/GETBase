@@ -3,17 +3,26 @@
 using namespace std;
 
 int main() {
-  Graph obj(5);
+  Graph obj(4);
 
-  vector<int> test1;
+  //obj.print(cout);
 
-  for(int x = 0; x < 2; x++){
-    test1.push_back(x);
-  }
+  // Create an empty vector
+  vector<int> vect;
   
-  for (auto i = test1.begin(); i != test1.end(); ++i){
-    cout << *i << " ";
-  }
-  
+  vect.push_back(0);
+  vect.push_back(1);
+  vect.push_back(2);
+  vect.push_back(3);
+  vect.push_back(4);
+  vect.push_back(5);
+  int x = 5;
+
+  obj.fill(vect, true);
+
+  obj.SIR(0, 0.3, vect, x);
+
+  obj.print(cout);
+
   return 0;
 }
