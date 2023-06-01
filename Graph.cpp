@@ -23,6 +23,8 @@ Graph::Graph() {
 
 Graph::Graph(int numNodes) {
     
+    cout << "stug" << endl;
+
     Test(numNodes);// use test to determine where I am in the code
     
     this->numNodes = numNodes;
@@ -87,7 +89,7 @@ int Graph::fill(const vector<int> &weights, bool diag) {// pass vector containin
     return 0;
 }
 
-int Graph::quadForm(int A, int B, int C) {
+int Graph::quadForm(int A, int B, int C) {// 1 -1 -12
     return ((-1) * B + (int) sqrt(B * B - 4 * A * C)) / (2 * A);
 }
 
