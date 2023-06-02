@@ -51,7 +51,7 @@ int runEpis(int numEpis, float alpha, int numNodes, vector<int> &weights) { //!!
     cout << "Summary:" << endl;// print out summary information for the 30 runs performed
     cout << "Average Length: " << avgLen/numEpis << endl;// print average epidemic length
     cout << "Average Total Infections: " << avgTotI/numEpis << endl;
-    cout << "Average Profile: ";
+    cout << "Average Profile: ";// print out the average profiule for the thirty (30) epidemic runs
     for(int x = 0; x < avgPro.size(); ++x){
       cout << round(avgPro[x]/numEpis) << " ";
     }
