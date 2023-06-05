@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/GETBaseKev",
+            "program": "${workspaceFolder}/build/GETBaseKev",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
