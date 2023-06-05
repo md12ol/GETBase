@@ -30,7 +30,8 @@ int runEpis(int numEpis, float alpha, int numNodes, vector<int> &weights) { //!!
     int avgTotI = 0;
     vector<int> avgPro = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     vector<int> vect2 = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    
+    vector<int> vect3 = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
     cout << "The program will run " << numEpis << " on the following graph: "<< endl;
     // Find out how to print graph!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,6 +43,7 @@ int runEpis(int numEpis, float alpha, int numNodes, vector<int> &weights) { //!!
       avgLen += epiLen;// add epidemic length to total epidemic length
       for(int y = 0; y < epiLen; y++){// add epidemic profile to total epidemic profile
         avgPro[y] += vect2[y];
+        vect3[y]++;
       }
 
       cout << "Length: " << epiLen << endl;// print out epidemic length
@@ -49,11 +51,17 @@ int runEpis(int numEpis, float alpha, int numNodes, vector<int> &weights) { //!!
     }// if performed all required epiodes break while loop
 
     cout << "Summary:" << endl;// print out summary information for the 30 runs performed
-    cout << "Average Length: " << avgLen/numEpis << endl;// print average epidemic length
-    cout << "Average Total Infections: " << avgTotI/numEpis << endl;
-    cout << "Average Profile: ";// print out the average profiule for the thirty (30) epidemic runs
+    cout << "Average Length: " << (double)avgLen/numEpis << endl;// print average epidemic length
+    cout << "Average Total Infections: " << (double)avgTotI/numEpis << endl;
+    cout << "Average Profile for Thirty Runs: ";// print out the average profiule for the thirty (30) epidemic runs
     for(int x = 0; x < avgPro.size(); ++x){
-      cout << round(avgPro[x]/numEpis) << " ";
+      cout << (double)avgPro[x]/numEpis << " ";
+    }
+    cout << endl;
+    cout << "Average Profile for Running Epidemics: ";// print out the average profiule for the thirty (30) epidemic runs
+    for(int x = 0; x < avgPro.size(); ++x){
+      if(avgPro[x] != 0) cout << (double)avgPro[x]/vect3[x] << " ";
+      else cout << "N/A ";
     }
     cout << endl;
     return 0;
