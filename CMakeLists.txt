@@ -12,11 +12,14 @@ set(CMAKE_CXX_STANDARD 20)
 #        Graph.h
 #        Graph.cpp)
 
-#set_property(TARGET GETBase PROPERTY WORKING_DIRECTORY ./)
+#add_executable(GETBase
+#       GraphTest.cpp
+#        Graph.cpp
+#        Graph.h)
 
 add_executable(GETBase
-        GraphTest.cpp
-        Graph.cpp
-        Graph.h)
+SDATest.cpp
+SDA.cpp
+SDA.h)
 
 set_property(TARGET GETBase PROPERTY WORKING_DIRECTORY ./)
