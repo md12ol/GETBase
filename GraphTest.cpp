@@ -58,9 +58,9 @@ int runEpis(int numEpis, float alpha, int numNodes, vector<int> &weights) { //!!
       cout << (double)avgPro[x]/numEpis << " ";
     }
     cout << endl;
-    cout << "Average Profile for Running Epidemics: ";// print out the average profiule for the thirty (30) epidemic runs
+    cout << "Average Profile for Running Epidemics: ";// print out the average profiule for the thirty (30) epidemic runs that were still running
     for(int x = 0; x < avgPro.size(); ++x){
-      if(avgPro[x] != 0) cout << (double)avgPro[x]/vect3[x] << " ";
+      if(avgPro[x] != 0) cout << (double)avgPro[x]/vect3[x] << " ";// printout second profile average printing
       else cout << "N/A ";
     }
     cout << endl;
