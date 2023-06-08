@@ -17,8 +17,8 @@ public:
     int create();
     int randomize();
     int copy(SDA &other);
-    int print();
-    int print(ostream &aus);
+    //int print();
+    int print(ostream &aus = cout);
     static int destroy();
     int twoPtCrossover(SDA &other);
     int oneStateCrossover(SDA &other);

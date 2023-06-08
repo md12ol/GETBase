@@ -100,7 +100,7 @@ int SDA::randomize() {
     return 0;
 }
 
-int SDA::copy(SDA &other) {
+int SDA::copy(SDA &other) {// Creates a copy of an SDA
     initInput = other.initInput;
     numStates = other.numStates;
     initState = other.initState;
@@ -113,10 +113,10 @@ int SDA::copy(SDA &other) {
     return 0;
 }
 
-int SDA::print() {
-    print(cout);
-    return 0;
-}
+// int SDA::print() {// THIS IS POINTLESS AS FAR AS I CAN TELL
+//     print(cout);
+//     return 0;
+// }
 
 int SDA::print(ostream &aus) {
     aus << initState << " <- " << initInput << endl;
