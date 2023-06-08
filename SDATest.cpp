@@ -6,6 +6,19 @@ int checker(int numVals, SDA &check){
     vector<int> vec(numVals);
     check.getBitsVec(numVals, vec);
 
+    if(vec.size() <= numVals){// if output form SDA is less than or equal to desired length
+        for(int x : vec){// go through vector
+            switch(vec[x]){// create switch for different cases
+                case 0:// if reading a  zero
+                cout << "A " << endl;// print an "A"
+                break;
+                case 1:// if reading a one
+                cout << "B " << endl;// Print a "B"
+                break;
+            }
+        }
+    }else cout << "Error output from SDA is to great" << endl;// if ouput from SDA is greater than desired length print error
+    cout << endl;
     return 0;
 }
 
