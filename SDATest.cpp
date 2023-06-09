@@ -35,5 +35,30 @@ int main() {
 
     checker(25, obj);// call cjecker method and pass the desired length of SDA's outpur and pass the SDA
 
+
+    SDA obj1(3, 2, 13);// Create the two SDAs for the test
+    SDA obj2(3, 2, 24);
+
+    cout << "Here is the first SDA created: " << endl;// print both of the SDAs to the terminal
+    obj1.print();
+    cout << endl << "Here is the second SDA created: " << endl;
+    obj2.print();
+
+    obj1.mutate(5);// call the mutation function for both SDAs
+    obj2.mutate(3);
+
+
+    cout << endl << "Here is the first SDA again but mutated: " <<endl;// print both of the mutated SDAs
+    obj1.print();
+    cout << endl << "Here is the second SDA again but mutated: " << endl;
+    obj2.print();
+
+    obj1.twoPtCrossover(obj2);// perform two-point crossover using the mutated SDAs
+
+    cout << endl << "Here is the first SDA after the crossover: " << endl;
+    obj1.print();
+    cout << endl << "Here is the second SDA after the crossover: " << endl;
+    obj2.print();
+
     return 0;
 }
