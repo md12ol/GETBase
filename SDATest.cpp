@@ -55,7 +55,7 @@ int main() {
     cout << endl << "Here is the second SDA again but mutated: " << endl;
     obj3.print();
 
-    obj2.twoPtCrossover(obj2);// perform two-point crossover using the mutated SDAs
+    obj2.twoPtCrossover(obj3);// perform two-point crossover using the mutated SDAs
 
     cout << endl << "Here is the first SDA after the crossover: " << endl;
     obj2.print();
