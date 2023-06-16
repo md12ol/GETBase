@@ -27,7 +27,7 @@ Graph::Graph(int numNodes) {
         numInfNeighs.push_back(0);
         state.push_back(0);
         adjM.push_back(emptyRow);
-        potStrains.push_back((vector<int>){});
+        potStrains.push_back((vector<int>) {});
         potStrains[node].reserve(numNodes);
         immunity.emplace_back(emptyBS);
     }
@@ -159,7 +159,8 @@ bool Graph::infect(int numInfNeighs, double alpha) {
     return false;
 }
 
-int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen, vector<int> varProfs[],
+int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen,
+                           vector<int> varProfs[],
                            vector<bitset<DNALen>> &variants, int varParents[], int varStart[], int initBits,
                            int minEdits, int maxEdits) {
     int curInf;
@@ -185,7 +186,7 @@ int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, in
 
     for (int var = 0; var < maxVars; ++var) {
         curVarInf[var] = 0;
-        varProfs[var] = (vector<int>){};
+        varProfs[var] = (vector<int>) {};
         varProfs[var].reserve(maxLen);
         varParents[var] = -2;
         varStart[var] = -1;
@@ -201,14 +202,14 @@ int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, in
     immunity[0] = variants[0];
 
     while (curInf > 0 && epiLen < maxLen) {
-        if (epiLen > maxLen){
-            cout<<"ERROR!!"<<endl;
+        if (epiLen > maxLen) {
+            cout << "ERROR!!" << endl;
         }
         epiLen += 1;
 
         // Determine infected neighbours
         for (int node = 0; node < numNodes; ++node) {
-            potStrains[node] = (vector<int>){};
+            potStrains[node] = (vector<int>) {};
         }
         for (int from = 0; from < numNodes; ++from) {
             if (state[from] >= 0) { // Infected
@@ -282,10 +283,10 @@ int Graph::variantInfect(bitset<DNALen> &immStr, double alpha, vector<int> &potV
         varOnes = (int) varStrs[varIdx].count();
         tmp = varStrs[varIdx] & immStr;
         badOnes = (int) tmp.count();
-        if (badOnes == 0){
+        if (badOnes == 0) {
 
         } else {
-            severities.push_back(((double) badOnes / (double)varOnes) * alpha);
+            severities.push_back(((double) badOnes / (double) varOnes) * alpha);
             indices.push_back(varIdx);
         }
     }

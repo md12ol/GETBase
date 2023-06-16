@@ -25,9 +25,9 @@ public:
     int SIR(int p0, double alpha, vector<int> &epiProfile, int &totInf);
     int print(ostream &out);
     vector<int> weightHist();
-    int SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen, vector<int> varProfs[],
-                        vector<bitset<DNALen>> &variants, int varParents[], int varStart[], int initBits,
-                        int minEdits, int maxEdits);
+    int SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen,
+                        vector<int> varProfs[], vector<bitset<DNALen>> &variants, int varParents[], int varStart[],
+                        int initBits, int minEdits, int maxEdits);
 
 protected:
     int numNodes;
@@ -50,5 +50,4 @@ protected:
                           int maxEdits);
 };
 
-
-#endif
+#endif // GRAPH_H
