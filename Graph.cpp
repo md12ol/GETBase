@@ -162,10 +162,11 @@ bool Graph::infect(int numInfNeighs, double alpha) {
 int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen,
                            vector<int> varProfs[],
                            vector<bitset<DNALen>> &variants, int varParents[], int varStart[], int initBits,
-                           int minEdits, int maxEdits) {
+                           int minEdits, int maxEdits, int &totInf) {
     int curInf;
     int epiLen = 0;
     int curVarInf[maxVars];
+    totInf = 0;
 
     // Stores all the indices of the variant strings for generating initial/new variants
     vector<int> randIdxVector(DNALen);
@@ -246,6 +247,7 @@ int Graph::SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, in
         }
 
         // Update
+        totInf += curInf;
         curInf = 0;
         for (int node = 0; node < numNodes; ++node) {
             if (state[node] < -1) { // Newly Infected

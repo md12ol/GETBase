@@ -57,7 +57,7 @@ double maxFit = numNodes;
 double minFit = 0.0;
 
 // Epidemic Variables
-int *bestEpiLen;                    // Best Epidemic for each SDA
+int *bestEpiVal;                    // Best Epidemic for each SDA
 double targetProfile[profLen + 1];  // Profile dictionary
 
 // Epidemic Variants Variables
@@ -182,13 +182,13 @@ void initAlg() {
 
     SDAPop = new SDA[popsize];
     fits.reserve(popsize);
-    bestEpiLen = new int[popsize];
+    bestEpiVal = new int[popsize];
     dead = new bool[popsize];
     for (int idx = 0; idx < popsize; ++idx) {
         SDAPop[idx] = SDA(SDANumStates, SDANumChars, SDAMaxRespLen, SDAOutLen);
         fits.push_back(-1);
         dead[idx] = false;
-        bestEpiLen[idx] = -1;
+        bestEpiVal[idx] = -1;
     }
     epiProfile.reserve(maxEpiLen);
     for (int idx = 0; idx < maxEpiLen; ++idx) {
@@ -339,7 +339,8 @@ double fitness(int idx, bool final) {//compute the fitness
     if (ctrlFitnessFctn != 0) {
         // TODO: Not Yet Implemented.
         cout << "ERROR!  NOT IMPLEMENTED!!" << endl;
-    } else { // Epidemic Length Fitness
+    }
+    if (ctrlFitnessFctn == 0) { // Epidemic Length Fitness
         if (variantProb == 0.0) { // ... without variants
             for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
                 cnt = 0;
@@ -370,14 +371,16 @@ double fitness(int idx, bool final) {//compute the fitness
                     accu += trial;
                 }
                 mean = accu / numSampEpis;
-                bestEpiLen[idx] = longest;
+                bestEpiVal[idx] = longest;
             }
         } else { // ... with variants
             for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
                 cnt = 0;
                 do {
+                    totInf = 0;
                     len = network.SIRwithVariants(0, alpha, variantProb, numVars, maxNumVars, maxEpiLen, varProfs,
-                                                  variants, varParents, varStart, initOneBits, minEdits, maxEdits);
+                                                  variants, varParents, varStart, initOneBits, minEdits, maxEdits,
+                                                  totInf);
                     cnt += 1;
                 } while (len < minEpiLen && cnt < shortEpiRetrys);
                 if (final) {
@@ -404,7 +407,79 @@ double fitness(int idx, bool final) {//compute the fitness
                     accu += trial;
                 }
                 mean = accu / numSampEpis;
-                bestEpiLen[idx] = longest;
+                bestEpiVal[idx] = longest;
+            }
+        }
+    } else if (ctrlFitnessFctn == 1) {
+
+    } else if (ctrlFitnessFctn == 2) { // Epidemic Spread Fitness
+        if (variantProb == 0.0) { // ... without variants
+            for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
+                cnt = 0;
+                do {
+                    totInf = 0;
+                    len = network.SIR(0, alpha, epiProfile, totInf);
+                    cnt += 1;
+                } while (len < minEpiLen && cnt < shortEpiRetrys);
+                if (final) {
+                    if (totInf > best_epi) {
+                        best_epi = totInf;
+                        bestVarCount = 0;
+                        bestVarStart[0] = 0;
+                        bestVarProfs[0] = epiProfile;
+                        bestVarParents[0] = -1;
+                        bestVarDNA[0] = bitset<DNALen>();
+                    }
+                } else {
+                    trials[epi] = totInf;
+                }
+            }
+            if (!final) {
+                int bestVal = 0;
+                for (double trial: trials) {//loop over trials
+                    if (trial > bestVal) {
+                        bestVal = (int) trial;
+                    }
+                    accu += trial;
+                }
+                mean = accu / numSampEpis;
+                bestEpiVal[idx] = bestVal;
+            }
+        } else { // ... with variants
+            for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
+                cnt = 0;
+                do {
+                    totInf = 0;
+                    len = network.SIRwithVariants(0, alpha, variantProb, numVars, maxNumVars, maxEpiLen, varProfs,
+                                                  variants, varParents, varStart, initOneBits, minEdits, maxEdits,
+                                                  totInf);
+                    cnt += 1;
+                } while (len < minEpiLen && cnt < shortEpiRetrys);
+                if (final) {
+                    if (totInf > best_epi) {
+                        best_epi = totInf;
+                        bestVarCount = numVars;
+                        for (int var = 0; var <= bestVarCount; ++var) {
+                            bestVarStart[var] = varStart[var];
+                            bestVarProfs[var] = varProfs[var];
+                            bestVarParents[var] = varParents[var];
+                            bestVarDNA[var] = variants[var];
+                        }
+                    }
+                } else {
+                    trials[epi] = totInf;
+                }
+            }
+            if (!final) {
+                int bestVal = 0;
+                for (double trial: trials) {//loop over trials
+                    if (trial > bestVal) {
+                        bestVal = (int) trial;
+                    }
+                    accu += trial;
+                }
+                mean = accu / numSampEpis;
+                bestEpiVal[idx] = bestVal;
             }
         }
     }
@@ -468,14 +543,14 @@ void report(ostream &outStrm) {//make a statistical report
         outStrm << left << setw(12) << CI95;
         outStrm << left << setw(10) << stdDev;
         outStrm << left << setw(12) << bestVal;
-        outStrm << left << setw(10) << bestEpiLen[bestIdx];
+        outStrm << left << setw(10) << bestEpiVal[bestIdx];
         outStrm << left << setw(8) << deaths << endl;
         if (verbose) {
             cout << left << setw(10) << mean;
             cout << left << setw(12) << CI95;
             cout << left << setw(10) << stdDev;
             cout << left << setw(12) << bestVal;
-            cout << left << setw(10) << bestEpiLen[bestIdx];
+            cout << left << setw(10) << bestEpiVal[bestIdx];
             cout << left << setw(8) << deaths << endl;
         }
     } else { // Minimizing
