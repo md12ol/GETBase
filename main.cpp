@@ -44,10 +44,19 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
     // Create Directory for Output
     if (ctrlFitnessFctn == 0) {
         if (newVarProb > 0.0) {
-            sprintf(pathToOut, "%sOutput - ELVar w %.4fVarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
-                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
-                    generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100),
-                    maxMuts, numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
+            if (varCoupled) {
+                sprintf(pathToOut,
+                        "%sOutput - ELVarC w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                        " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
+                        generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100),
+                        maxMuts, numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
+            } else {
+                sprintf(pathToOut,
+                        "%sOutput - ELVarU w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                        " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits, %.2f%%DA/", outRoot, newVarProb * 100, popsize,
+                        generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100),
+                        maxMuts, numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits, varAlphaDelta);
+            }
         } else {
             sprintf(pathToOut, "%sOutput - EL w %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
                                " %02dSEpis, %02dSt/", outRoot, popsize, generations, tournSize,
@@ -57,16 +66,39 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
         sprintf(pathToOut, "%sOutput - PM%d w %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
                            " %02dSEpis, %02dSt/", outRoot, profileNum, popsize, generations, tournSize,
                 (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts, numSampEpis, SDANumStates);
-    } else {
+    } else if (ctrlFitnessFctn == 2) {
         if (newVarProb > 0.0) {
-            sprintf(pathToOut, "%sOutput - ESVar w %.4fVarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
-                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
+            if (varCoupled) {
+                sprintf(pathToOut,
+                        "%sOutput - ESprVarC w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                        " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
+                        generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts,
+                        numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
+            } else {
+                sprintf(pathToOut,
+                        "%sOutput - ESprVarU w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                        " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits, %.2f%%DA/", outRoot, newVarProb * 100, popsize,
+                        generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts,
+                        numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits, varAlphaDelta);
+            }
+        } else {
+            sprintf(pathToOut, "%sOutput - ESpr w %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                               " %02dSEpis, %02dSt/", outRoot, popsize, generations, tournSize,
+                    (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts, numSampEpis, SDANumStates);
+        }
+    } else {
+        if (varCoupled) {
+            sprintf(pathToOut,
+                    "%sOutput - ESevVarC w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                    " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
                     generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts,
                     numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
         } else {
-            sprintf(pathToOut, "%sOutput - ES w %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
-                               " %02dSEpis, %02dSt/", outRoot, popsize, generations, tournSize,
-                    (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts, numSampEpis, SDANumStates);
+            sprintf(pathToOut,
+                    "%sOutput - ESevVarU w %.4f%%VarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
+                    " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits, %.2f%%DA/", outRoot, newVarProb * 100, popsize,
+                    generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts,
+                    numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits, varAlphaDelta);
         }
     }
     mkdir(pathToOut, 0777);
@@ -85,7 +117,7 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
     initAlg();
     cmdLineIntro(cout);
 
-    for (int run = initRunNum; run <= initRunNum + runs; run++) {
+    for (int run = initRunNum; run < initRunNum + runs; run++) {
         sprintf(filename, "%srun%02d.dat", pathToOut, run);
         runStats.open(filename, ios::out);
         if (verbose) cmdLineRun(run, cout);
@@ -103,7 +135,7 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
         }
         runStats.close();
         reportBest(expStats);
-        cout << "Done run " << run << ".  " << runs - (run - initRunNum) << " more to go. " << endl;
+        cout << "Done run " << run << ".  " << runs - (run - initRunNum + 1) << " more to go. " << endl;
     }
     expStats.close();
     return (0);

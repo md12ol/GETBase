@@ -444,15 +444,62 @@ double epiSpreadFitness(int idx, bool final) {
 }
 
 double epiSeverityFitness(int idx, bool final) {
+    int epiLen;
+    int oneSum;
+    int multiSum = 0.0;
+    int totInf;
+    bestEpiVal[idx] = 0;
+
     if (newVarProb == 0) {
-        // TODO: Implement new fitness function.
-        cout << "Error in main file: epiSeverityFitness(...): NOT YET IMPLEMENTED!" << endl;
-    } else {
         cout << "Error in main file: epiSeverityFitness(...): Must have variants with epidemic severity fitness!"
              << endl;
-        return -1.0;
+    } else {
+        int numVars = 0;
+        vector<int> varProfs[maxNumVars];
+        vector<bitset<DNALen>> varDNAs(maxNumVars);
+        int varParents[maxNumVars];
+        int varStarts[maxNumVars];
+        double varAlphas[maxNumVars];
+        int varInfSeverity[DNALen];
+        bitset<DNALen> emptyBS(0);
+        for (int var = 0; var < maxNumVars; ++var) {
+            varDNAs.push_back(emptyBS);
+            varAlphas[var] = -1;
+        }
+        varAlphas[0] = alpha;
+
+        for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
+            int epiCnt = 0;
+            do {
+                epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
+                                                 varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
+                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                epiCnt += 1;
+            } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
+            oneSum = 0;
+            for (int i = 0; i < DNALen; i++){
+                oneSum += varInfSeverity[i] * i;
+            }
+            multiSum += oneSum;
+            if (oneSum > bestEpiVal[idx]) {
+                bestEpiVal[idx] = oneSum;
+                if (final) {
+                    bestVarCount = numVars;
+                    for (int i = 0; i < DNALen; ++i) {
+                        bestVarSeverity[i] = varInfSeverity[i];
+                    }
+                    for (int var = 0; var <= bestVarCount; ++var) {
+                        bestVarStarts[var] = varStarts[var];
+                        bestVarProfs[var] = varProfs[var];
+                        bestVarParents[var] = varParents[var];
+                        bestVarDNAs[var] = varDNAs[var];
+                        bestVarAlphas[var] = varAlphas[var];
+                    }
+                }
+            }
+        }
     }
-    return 0.0;
+    return (double) multiSum / (final ? 10 * numSampEpis : numSampEpis);
 }
 
 double profileMatchingFitness(int idx, bool final) {
@@ -460,7 +507,7 @@ double profileMatchingFitness(int idx, bool final) {
     double multiSum = 0.0;
     double oneSum;
     int totInf;
-    bestEpiVal[idx] = 0;
+    bestEpiVal[idx] = MAXFLOAT;
 
     if (newVarProb == 0.0) {
         for (int epi = 0; epi < (final ? 10 * numSampEpis : numSampEpis); ++epi) {
@@ -479,7 +526,8 @@ double profileMatchingFitness(int idx, bool final) {
                     oneSum += pow(targetProfile[day] - epiProfile[day], 2);
                 }
             }
-            multiSum += sqrt(oneSum / max(epiLen, profLen));
+            oneSum = sqrt(oneSum / max(epiLen, profLen));
+            multiSum += oneSum;
             if (oneSum < bestEpiVal[idx]) {
                 bestEpiVal[idx] = oneSum;
                 bestVarProfs[0] = epiProfile;
@@ -526,6 +574,8 @@ void report(ostream &outStrm) {//make a statistical report
             deaths++;
         }
     }
+
+//    printIdxsOfVector(cout, fits, goodIdxs, "Fits: ", "\t", true);
 
     vector<double> stats = calcStats(goodIdxs, ctrlFitnessFctn != 1);
     double mean = stats[0];
@@ -736,7 +786,9 @@ void reportBest(ostream &outStrm) {//report the best graph
         outStrm << "[" << left << setw(2) << bestVarStarts[0] << " ";
         outStrm << bestVarProfs[0].size() << "]: ";
         for (int j: bestVarProfs[0]) {
-            outStrm << j << " ";
+            if (j > 0) {
+                outStrm << j << " ";
+            }
         }
         outStrm << endl;
     }
