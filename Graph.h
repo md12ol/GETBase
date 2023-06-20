@@ -25,9 +25,10 @@ public:
     int SIR(int p0, double alpha, vector<int> &epiProfile, int &totInf);
     int print(ostream &out);
     vector<int> weightHist();
-    int SIRwithVariants(int p0, double alpha, double varProb, int &varCnt, int maxVars, int maxLen,
-                        vector<int> varProfs[], vector<bitset<DNALen>> &variants, int varParents[], int varStart[],
-                        int initBits, int minEdits, int maxEdits, int &totInf);
+    int SIRwithVariants(int p0, double varAlphas[], bool coupled, double newVarProb, int &varCnt, int maxVars, int maxLen,
+                               vector<int> varProfs[], vector<bitset<DNALen>> &varDNAs, int varParents[],
+                               int varStarts[], int varInfSeverity[], int initBits, int minEdits, int maxEdits,
+                               double alphaDelta, int &totInf);
 
 protected:
     int numNodes;
@@ -43,11 +44,11 @@ protected:
 
     static int quadForm(int A, int B, int C);
     static bool infect(int numInfNeighs, double alpha);
-    static int variantInfect(bitset<DNALen> &immunity, double alpha, vector<int> &potStrains,
-                             vector<bitset<DNALen>> &allStrains, int maxVars);
+    int variantInfect(bitset<DNALen> &immStr, double varAlphas[], vector<int> &potVars,
+                             vector<bitset<DNALen>> &varStrs, int varInfSeverity[], int maxVars, bool coupled) const;
     static bool compareSeverity(pair<double, int> severity1, pair<double, int> severity2);
-    static int newVariant(bitset<DNALen> &origVar, bitset<DNALen> &newVar, vector<int> &rndIdxVec, int minEdits,
-                          int maxEdits);
+    static int newVariant(bitset<DNALen> &origVar, const double &origVarAlpha, bitset<DNALen> &newVar, double &newVarAlpha,
+               vector<int> &rndIdxVec, int minEdits, int maxEdits, double alphaDelta, bool coupled);
 };
 
 #endif // GRAPH_H

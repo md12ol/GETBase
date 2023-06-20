@@ -5,7 +5,7 @@
  * the specified fitness function, and output results.  This will be repeated runs times.
  * The command line arguments are explained below:
  * 1. Random Number Seed
- * 2. Fitness Function (0 -> Epidemic Length, 1 -> Profile Matching, 2 -> Epidemic Spread)
+ * 2. Fitness Function (0 -> Epidemic Length, 1 -> Profile Matching, 2 -> Epidemic Spread, 3 -> Epidemic Severity)
  * 3. Variants (0.0 -> No Variants, (0.0, 1.0] -> Variants with this Variant Probability)
  * 4. Initial Run Number
  * 5. Number of Runs
@@ -23,7 +23,10 @@
  * If using Variants (aka the second argument is more than 0.0 and at most 1.0)
  * 14. The Number of 1s in the Initial Variant String
  * 15. The Minimum Number of Edits for Derived Variants, inclusive
- * 16. The Maximum Number of Edits for Derived Variants, inclusive TODO: Add This
+ * 16. The Maximum Number of Edits for Derived Variants, inclusive
+ * 17. Coupled Immunity and Infectivity (0 -> Uncoupled, 1 -> Coupled)
+ * If using Variants and Uncoupled (aka the 17th argument is 0)
+ * 18. The Maximum Absolute Difference Between a Parent and Child Variant's Alpha (for Uncoupled)
  * Note: The use of variants using profile matching fitness is not implemented/possible.
  *
  * @param numCmdLineArgs Number of Command Line Arguments
@@ -40,9 +43,9 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
 
     // Create Directory for Output
     if (ctrlFitnessFctn == 0) {
-        if (variantProb > 0.0) {
+        if (newVarProb > 0.0) {
             sprintf(pathToOut, "%sOutput - ELVar w %.4fVarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
-                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, variantProb * 100, popsize,
+                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
                     generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100),
                     maxMuts, numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
         } else {
@@ -55,9 +58,9 @@ int main(int numCmdLineArgs, char *cmdLineArgs[]) {
                            " %02dSEpis, %02dSt/", outRoot, profileNum, popsize, generations, tournSize,
                 (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts, numSampEpis, SDANumStates);
     } else {
-        if (variantProb > 0.0) {
+        if (newVarProb > 0.0) {
             sprintf(pathToOut, "%sOutput - ESVar w %.4fVarP, %03dPS, %06dMevs, %dTS, %03d%%CrR, %03d%%MuR, %dMNM,"
-                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, variantProb * 100, popsize,
+                               " %02dSEpis, %02dSt, %02dInitB, %02d-%02dEdits/", outRoot, newVarProb * 100, popsize,
                     generations, tournSize, (int) (crossoverRate * 100), (int) (mutationRate * 100), maxMuts,
                     numSampEpis, SDANumStates, initOneBits, minEdits, maxEdits);
         } else {
