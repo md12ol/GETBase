@@ -27,8 +27,8 @@
  * New Variant String:      1 1 1 1 1 0 0 0 0 0 1
 */
 
-int main(int argc, char *argv[]) {
-    char filename[200];
+int main(int argc, char *argv[]) {// take command line arguments as parameters
+    char filename[200]; // array holding filename with max of 200 characters
     fstream runStats, expStats, readMe; // For File Output
     char *pLoc;                         // Location of the Profile
     int pNum;                           // Profile Number
@@ -99,12 +99,12 @@ int main(int argc, char *argv[]) {
         if (verbose) cmdLineRun(run, cout);
         initPop(); // Initialization
         report(runStats); // Initial Report
-        for (int mev = 0; mev < generations; mev++) { // Evolution
+        for (int mev = 1; mev <= generations; mev++) { // Evolution
             matingEvent();
-            if ((mev + 1) % reportEvery == 0) { // Is it time to report?
+            if (mev % reportEvery == 0) { // Is it time to report?
                 if (verbose) {
                     cout << left << setw(5) << run;
-                    cout << left << setw(4) << (mev + 1) / reportEvery;
+                    cout << left << setw(4) << mev / reportEvery;
                 }
                 report(runStats);
             }

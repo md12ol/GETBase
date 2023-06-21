@@ -41,7 +41,7 @@ int main() {
     SDA obj3(3, 2, 24);
     obj3.create();
 
-    cout << "Here is the first SDA created: " << endl;// print both of the SDAs to the terminal
+    cout << endl << "Here is the first SDA created: " << endl;// print both of the SDAs to the terminal
     obj2.print();
     cout << endl << "Here is the second SDA created: " << endl;
     obj3.print();

@@ -356,8 +356,7 @@ double fitnessPrep(int idx, SDA &A, bool final) {
         }
     }
 
-    double fi = fitness(idx, final);
-    return fi;
+    return fitness(idx, final);// return fitness of SDA
 }
 
 double fitness(int idx, bool final) {//compute the fitness
@@ -411,7 +410,7 @@ double fitness(int idx, bool final) {//compute the fitness
                     }
                     accu += trial;
                 }
-                accu = accu / numSampEpis;
+                accu = accu / numSampEpis;// get average trial length
                 bestEpiLen[idx] = longest;
             }
         } else { // ... with variants
@@ -558,7 +557,7 @@ vector<double> calcStats(const vector<int> &goodIdxs, bool biggerBetter) {
         stdDevSum += pow(fits[idx] - mean, 2);
     }
     double stdDev = sqrt(stdDevSum / ((double) goodIdxs.size() - 1.0));
-    double CI95 = 1.96 * (stdDev / sqrt((double) goodIdxs.size()));
+    double CI95 = 1.96 * (stdDev / sqrt((double) goodIdxs.size()));// 95% confidence interval
 
     return {mean, stdDev, CI95, bestVal, worstVal}; // {mean, stdDev, 95CI, best, worst}
 }
@@ -574,12 +573,12 @@ void matingEvent() {//run a mating event
     // Crossover
     SDAPop[tournIdxs[0]].copy(SDAPop[tournIdxs[tournSize - 2]]);
     SDAPop[tournIdxs[1]].copy(SDAPop[tournIdxs[tournSize - 1]]);
-    SDAPop[tournIdxs[0]].twoPtCrossover(SDAPop[tournIdxs[1]]);
+    SDAPop[tournIdxs[0]].twoPtCrossover(SDAPop[tournIdxs[1]]);// create two children (in place of the copied parents)
 
     // Mutation
-    numMuts = (int) lrand48() % maxMuts + 1;
+    numMuts = (int) (lrand48() % maxMuts) + 1;
     SDAPop[tournIdxs[0]].mutate(numMuts);
-    numMuts = (int) lrand48() % maxMuts + 1;
+    numMuts = (int) (lrand48() % maxMuts) + 1;
     SDAPop[tournIdxs[1]].mutate(numMuts);
 
     // reset dead SDAs
