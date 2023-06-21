@@ -666,9 +666,9 @@ void matingEvent() {
 
     // Mutation
     if (drand48() < mutationRate) {
-        numMuts = (int) lrand48() % (maxMuts + 1) + 1;
+        numMuts = (int) lrand48() % maxMuts + 1;
         SDAPop[tournIdxs[0]].mutate(numMuts);
-        numMuts = (int) lrand48() % (maxMuts + 1) + 1;
+        numMuts = (int) lrand48() % maxMuts + 1;
         SDAPop[tournIdxs[1]].mutate(numMuts);
     }
 
