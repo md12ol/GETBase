@@ -22,7 +22,7 @@ Graph::Graph(int numNodes) {
     immunity.reserve(numNodes);
 
     vector<int> emptyRow(numNodes);
-    bitset<DNALen> emptyBS(0);
+    vector<int>emptyBS(DNALen,0);
     for (int node = 0; node < numNodes; ++node) {
         numInfNeighs.push_back(0);
         state.push_back(0);
@@ -160,7 +160,7 @@ bool Graph::infect(int numInfNeighs, double alpha) {
 }
 
 int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newVarProb, int &varCnt, int maxVars,
-                           int maxLen, vector<int> varProfs[], vector<bitset<DNALen>> &varDNAs, int varParents[],
+                           int maxLen, vector<int> varProfs[], vector<vector<int>> &varDNAs, int varParents[],
                            int varStarts[], int varInfSeverity[], int initBits, int minEdits, int maxEdits,
                            double alphaDelta, int &totInf) {
     int curInf;
@@ -177,14 +177,17 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
 
     for (int node = 0; node < numNodes; ++node) {
         state[node] = -1; // Susceptible
-        immunity[node].reset(); // Zeros in Immunity Strings
-        varDNAs[node].reset(); // Zeros in Variant Strings
+        std::fill(immunity[node].begin(), immunity[node].end(),0); // Zeros in Immunity Strings
+        std::fill(varDNAs[node].begin(), varDNAs[node].end(),0); // Zeros in Variant Strings
     }
 
     shuffle(randIdxVector.begin(), randIdxVector.end(), std::mt19937(std::random_device()()));
+
+    //creating first variant with random 1's
     for (int idx = 0; idx < initBits; ++idx) {
-        varDNAs[0].set(randIdxVector[idx]);
+        varDNAs[0][randIdxVector[idx]]=1;
     }
+
 
     for (int var = 0; var < maxVars; ++var) {
         curVarInf[var] = 0;
@@ -202,7 +205,8 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     varProfs[0] = {1};
     varStarts[0] = 0;
     immunity[0] = varDNAs[0];
-    varInfSeverity[varDNAs[0].count()]++;
+    //counting 1's
+    varInfSeverity[count(varDNAs[0].begin(), varDNAs[0].end(), 1)]++;
 
     while (curInf > 0 && epiLen < maxLen) {
         if (epiLen > maxLen) {
@@ -229,9 +233,10 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
             if (!potStrains[node].empty()) {
                 state[node] = variantInfect(immunity[node], varAlphas, potStrains[node], varDNAs, varInfSeverity,
                                             maxVars, coupled);
+
                 if (state[node] < -1) { // Infected
                     int curStrainID = state[node] + maxVars + 1;
-                    immunity[node] = immunity[node] | varDNAs[curStrainID];
+                    immunityUpdate(immunity[node],varDNAs[curStrainID]);
                     if (newVarProb > 0 && drand48() < newVarProb) { // New Variant
                         varCnt += 1;
                         if (varCnt == maxVars) {
@@ -239,8 +244,8 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                         }
                         newVariant(varDNAs[curStrainID], varAlphas[curStrainID], varDNAs[varCnt], varAlphas[varCnt],
                                    randIdxVector, minEdits, maxEdits, alphaDelta, coupled);
-                        state[node] = varCnt - maxVars - 1;
-                        immunity[node] = immunity[node] | varDNAs[varCnt];
+                        state[node] = varCnt - maxVars -  1;
+                        immunityUpdate(immunity[node],varDNAs[varCnt]);
                         varStarts[varCnt] = epiLen;
                         varParents[varCnt] = curStrainID;
                         varProfs[varCnt] = {1};
@@ -273,22 +278,21 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     return epiLen;
 }
 
-int Graph::variantInfect(bitset<DNALen> &immStr, double varAlphas[], vector<int> &potVars,
-                         vector<bitset<DNALen>> &varStrs, int varInfSeverity[], int maxVars, bool coupled) const {
-    int varOnes;
-    int badOnes;
-    // The potential infections where each pair is the alpha and index of variant
+int Graph::variantInfect(vector<int> &immStr, double varAlphas[], vector<int> &potVars,
+                         vector<vector<int>> &varStrs, int varInfSeverity[], int maxVars, bool coupled) const {
     vector<pair<double, int>> alphaIdxPairs;
     vector<double> uncoupledFullyImmuneProbs;
     uncoupledFullyImmuneProbs.reserve(numNodes);
     alphaIdxPairs.reserve(numNodes);
-    bitset<DNALen> tmp;
 
-    immStr.flip();
     for (int varIdx: potVars) {
-        varOnes = (int) varStrs[varIdx].count();
-        tmp = varStrs[varIdx] & immStr;
-        badOnes = (int) tmp.count();
+        int varOnes = (int) count(varStrs[varIdx].begin(), varStrs[varIdx].end(), 1);
+        int badOnes=0;
+        for(int i=0;i<varStrs[varIdx].size();i++){
+            if(varStrs[varIdx][i]==1 && immStr[i]==0){
+                badOnes++;
+            }
+        }
         if (badOnes == 0) {
             // Do nothing as they cannot become infected as they are immune.
             if (!coupled){
@@ -300,15 +304,16 @@ int Graph::variantInfect(bitset<DNALen> &immStr, double varAlphas[], vector<int>
             } else alphaIdxPairs.emplace_back(varAlphas[varIdx], varIdx);
         }
     }
-    immStr.flip();
     sort(alphaIdxPairs.begin(), alphaIdxPairs.end(), compareSeverity);
     for (auto &alphaIdxPair: alphaIdxPairs) {
         if (infect(1, alphaIdxPair.first)) {
-            immStr.flip();
-            tmp = varStrs[alphaIdxPair.second] & immStr;
-            badOnes = (int) tmp.count();
+            int badOnes = 0;
+            for(int i=0;i<varStrs[alphaIdxPair.second].size();i++){
+                if(varStrs[alphaIdxPair.second][i]==1 && immStr[i]==0){
+                    badOnes++;
+                }
+            }
             varInfSeverity[badOnes]++;
-            immStr.flip();
             return alphaIdxPair.second - maxVars - 1;
         }
     }
@@ -328,13 +333,13 @@ bool Graph::compareSeverity(pair<double, int> severity1, pair<double, int> sever
 }
 
 int
-Graph::newVariant(bitset<DNALen> &origVar, const double &origVarAlpha, bitset<DNALen> &newVar, double &newVarAlpha,
+Graph::newVariant(vector<int> &origVar, const double &origVarAlpha, vector<int> &newVar, double &newVarAlpha,
                   vector<int> &rndIdxVec, int minEdits, int maxEdits, double alphaDelta, bool coupled) {
     shuffle(rndIdxVec.begin(), rndIdxVec.end(), std::mt19937(std::random_device()()));
     int numEdits = (int) lrand48() % (maxEdits - minEdits + 1) + minEdits;
     newVar = origVar;
     for (int idx = 0; idx < numEdits; ++idx) {
-        newVar.flip(rndIdxVec[idx]);
+        vectorFlip(newVar,rndIdxVec[idx]);
     }
     if (coupled) {
         newVarAlpha = origVarAlpha;
@@ -454,4 +459,22 @@ vector<int> Graph::fill(const string filename) {
         cout << "ERROR!!! Made weight list from graph wrong" << endl;
     }
     return vals;
+}
+
+void Graph::vectorFlip(vector<int>&v, int pos) {
+    if (v[pos] != 0 && v[pos] != 1) {
+        printf("Unexpected value!");
+    }
+    else{
+        v[pos] = v[pos] == 0 ? 1 : 0;
+    }
+}
+
+//Immunity update function
+void Graph::immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr){
+    for(int i=0; i<immunityStr.size();i++){
+        if(immunityStr[i]==0 && variantStr[i]==1){
+            immunityStr[i]=1;
+        }
+    }
 }
