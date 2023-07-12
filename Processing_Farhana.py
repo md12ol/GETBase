@@ -7,7 +7,7 @@ import numpy as np
 # Need to install on linux before use, and include as packages in PyCharm
 from graphviz import Graph  # Network visualizer (nodes and edges)
 
-raw_data_path = "./Output/"
+raw_data_path = "./Output2/"
 figure_path = "./Figures/"
 main_filename = "best01.dat"
 num_runs = 30
@@ -306,7 +306,12 @@ def node_deg_hist(el: []):
 def main():
     print("START")
     folder_names = os.listdir(raw_data_path)
-    exp_titles = ["Epidemic Severity Fitness", "Epidemic Spread Fitness"]
+    if len(folder_names) == 2:
+        exp_titles = ["Epidemic Severity Fitness", "Epidemic Spread Fitness"]
+        pass
+    else:
+        exp_titles = ["Epidemic Spread Fitness"]
+        pass
 
     data = []
     for fold in folder_names:
@@ -341,25 +346,37 @@ def main():
             pass
 
         avg_hists.append(avg_hist)
-        avg_edges.append(total_edges/num_runs)
+        avg_edges.append(total_edges / num_runs)
         make_histogram(avg_hist, "AVERAGE " + title)
 
         make_epi_profile(data[exp_num][0][3], data[exp_num][0][4], data[exp_num][0][5], title)
         pass
 
-    make_lines([avg_hists[0], avg_hists[1]], ["Severity", "Spread"], "AVERAGE Histogram for Both Fitness Functions")
-    calc_avg_inf_var(data[0], "Epidemic Severity")
-    calc_avg_inf_var(data[1], "Epidemic Spread")
+    if len(folder_names) == 2:
+        make_lines([avg_hists[0], avg_hists[1]], ["Severity", "Spread"], "AVERAGE Histogram for Both Fitness Functions")
+        calc_avg_inf_var(data[0], "Epidemic Severity")
+        calc_avg_inf_var(data[1], "Epidemic Spread")
+        pass
+    else:
+        make_lines([avg_hists[0]], ["Spread"], "AVERAGE Histogram for Both Fitness Functions")
+        calc_avg_inf_var(data[0], "Epidemic Spread")
+        pass
 
     print("")
-    print("Average Number of Edges for Epidemic Severity: " + str(avg_edges[0]))
-    print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[1]))
 
-    node_deg_hist(data[0][0][7])
-    node_deg_hist(data[1][0][7])
-
-    make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Severity Fitness", num_nodes)
-    make_graph(edge_list(data[1][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
+    if len(folder_names) == 2:
+        print("Average Number of Edges for Epidemic Severity: " + str(avg_edges[0]))
+        print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[1]))
+        node_deg_hist(data[0][0][7])
+        node_deg_hist(data[1][0][7])
+        make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Severity Fitness", num_nodes)
+        make_graph(edge_list(data[1][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
+        pass
+    else:
+        print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[0]))
+        node_deg_hist(data[0][0][7])
+        make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
+        pass
 
     print("END")
     pass

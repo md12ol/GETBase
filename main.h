@@ -276,11 +276,10 @@ void initPop() {
     // Generate the Initial Population
     for (int idx = 0; idx < popsize; idx++) {
         dead[idx] = false;
-        SDAPop[idx].fillOutput(SDAOutput);
-        while (necroticFilter()) {
+        do {
             SDAPop[idx].randomize();
             SDAPop[idx].fillOutput(SDAOutput);
-        }
+        } while (necroticFilter());
         fits[idx] = fitness(idx, false);
     }
 
@@ -477,7 +476,7 @@ double epiSeverityFitness(int idx, bool final) {
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             oneSum = 0;
-            for (int i = 0; i < DNALen; i++){
+            for (int i = 0; i < DNALen; i++) {
                 oneSum += varInfSeverity[i] * i;
             }
             multiSum += oneSum;
