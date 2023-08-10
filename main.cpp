@@ -14,7 +14,8 @@
  * 8. Tournament Size
  * 9. Crossover Rate
  * 10. Mutation Rate
- * 11. Maximum Number of Mutations (MNM) (The number of mutations will be in the range [1, MNM])
+ * 11. Maximum Number of
+ * Mutations (MNM) (The number of mutations will be in the range [1, MNM])
  * 12. Number of Sample Epidemics
  * 13. Number of States in the SDAs
  * If Profile Matching (aka the first argument is set to 1)

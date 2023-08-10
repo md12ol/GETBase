@@ -28,7 +28,7 @@ public:
     int SIRwithVariants(int p0, double varAlphas[], bool coupled, double newVarProb, int &varCnt, int maxVars, int maxLen,
                                vector<int> varProfs[], vector<vector<int>> &varDNAs, int varParents[],
                                int varStarts[], int varInfSeverity[], int initBits, int minEdits, int maxEdits,
-                               double alphaDelta, int &totInf);
+                               double alphaDelta, int &totInf, bool fadingImmunity);
 
 protected:
     int numNodes;
@@ -49,9 +49,9 @@ protected:
     static bool compareSeverity(pair<double, int> severity1, pair<double, int> severity2);
     static int newVariant(vector<int> &origVar, const double &origVarAlpha, vector<int> &newVar, double &newVarAlpha,
                vector<int> &rndIdxVec, int minEdits, int maxEdits, double alphaDelta, bool coupled);
-    static void vectorFlip(vector<int>&v);
     static void vectorFlip(vector<int>&v, int pos);
-    static void immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr);
+    static void immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr, int immuStrength);
+    static void decreaseImmunity(vector<int>&immuString);
 };
 
 #endif // GRAPH_H

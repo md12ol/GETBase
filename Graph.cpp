@@ -162,12 +162,12 @@ bool Graph::infect(int numInfNeighs, double alpha) {
 int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newVarProb, int &varCnt, int maxVars,
                            int maxLen, vector<int> varProfs[], vector<vector<int>> &varDNAs, int varParents[],
                            int varStarts[], int varInfSeverity[], int initBits, int minEdits, int maxEdits,
-                           double alphaDelta, int &totInf) {
+                           double alphaDelta, int &totInf, bool fadingImmunity) {
     int curInf;
     int epiLen = 0;
     int curVarInf[maxVars];
     totInf = 0;
-
+    int immuStrength = fadingImmunity ? 9 : 1;
     // Stores all the indices of the variant strings for generating initial/new varDNAs
     vector<int> randIdxVector(DNALen);
     for (int idx = 0; idx < DNALen; ++idx) {
@@ -236,7 +236,7 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
 
                 if (state[node] < -1) { // Infected
                     int curStrainID = state[node] + maxVars + 1;
-                    immunityUpdate(immunity[node],varDNAs[curStrainID]);
+                    immunityUpdate(immunity[node],varDNAs[curStrainID], immuStrength);
                     if (newVarProb > 0 && drand48() < newVarProb) { // New Variant
                         varCnt += 1;
                         if (varCnt == maxVars) {
@@ -245,7 +245,7 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                         newVariant(varDNAs[curStrainID], varAlphas[curStrainID], varDNAs[varCnt], varAlphas[varCnt],
                                    randIdxVector, minEdits, maxEdits, alphaDelta, coupled);
                         state[node] = varCnt - maxVars -  1;
-                        immunityUpdate(immunity[node],varDNAs[varCnt]);
+                        immunityUpdate(immunity[node],varDNAs[varCnt], immuStrength);
                         varStarts[varCnt] = epiLen;
                         varParents[varCnt] = curStrainID;
                         varProfs[varCnt] = {1};
@@ -272,6 +272,15 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                 varProfs[var].push_back(curVarInf[var]);
                 curVarInf[var] = 0;
             }
+        }
+        //Decrease immunity
+        if(fadingImmunity){
+            for (int node = 0; node < numNodes; ++node) {
+                if (state[node] == -1) {
+                    decreaseImmunity(immunity[node]);
+                }
+            }
+
         }
 
     }
@@ -471,10 +480,17 @@ void Graph::vectorFlip(vector<int>&v, int pos) {
 }
 
 //Immunity update function
-void Graph::immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr){
+void Graph::immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr, int immuStrength){
     for(int i=0; i<immunityStr.size();i++){
         if(immunityStr[i]==0 && variantStr[i]==1){
-            immunityStr[i]=1;
+            immunityStr[i]=immuStrength;
         }
     }
+}
+
+void Graph::decreaseImmunity(vector<int>&immuString){
+    for(int i=0;i<immuString.size();i++){
+        if(immuString[i]>0) immuString[i]--;
+    }
+
 }

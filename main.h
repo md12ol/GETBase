@@ -47,6 +47,7 @@ const int SDAMaxRespLen = 2;
 int initOneBits = 32;
 const int maxNumVars = numNodes;
 const int maxEpiLen = 128;
+int fadingImmunity =1;
 
 // Genetic Algorithm Variables
 SDA *SDAPop;                // Stores the Population of SDAs
@@ -353,7 +354,7 @@ double epiLenFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             sum += epiLen;
@@ -415,7 +416,7 @@ double epiSpreadFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf,fadingImmunity);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             sum += totInf;
@@ -468,7 +469,7 @@ double epiSeverityFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             oneSum = 0;
