@@ -1,6 +1,7 @@
 #include "Graph.h"
 
 #include <random>
+#include <algorithm>
 
 Graph::Graph() {
     numNodes = 0;
@@ -270,6 +271,15 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
         for (int var = 0; var <= varCnt; ++var) {
             if (curVarInf[var] > 0) {
                 varProfs[var].push_back(curVarInf[var]);
+                int val=0;
+                if (varProfs[var].size()-immuStrength>val) val= varProfs[var].size()-immuStrength;
+                int sum = 0;
+                for(int i= val;i<varProfs[var].size();i++){
+                    sum+=varProfs[var][i];
+                }
+                if(sum>numNodes){
+                    cout << "Error sum>numNodes" << endl;
+                }
                 curVarInf[var] = 0;
             }
         }
