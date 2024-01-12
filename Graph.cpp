@@ -163,12 +163,23 @@ bool Graph::infect(int numInfNeighs, double alpha) {
 int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newVarProb, int &varCnt, int maxVars,
                            int maxLen, vector<int> varProfs[], vector<vector<int>> &varDNAs, int varParents[],
                            int varStarts[], int varInfSeverity[], int initBits, int minEdits, int maxEdits,
-                           double alphaDelta, int &totInf, bool fadingImmunity) {
+                           double alphaDelta, int &totInf, int fadingImmunity, int immuStr) {
     int curInf;
     int epiLen = 0;
     int curVarInf[maxVars];
     totInf = 0;
-    int immuStrength = fadingImmunity ? 9 : 1;
+    //int immuStrength = fadingImmunity ? immuStr : 1;
+    int immuStrength;
+    if(fadingImmunity>0){ // fading immunity
+        immuStrength = immuStr;
+    }
+    else if(fadingImmunity==0){ // static immunity
+        immuStrength = 1;
+    }
+    else{
+        immuStrength = 0; // no immunity
+    }
+
     // Stores all the indices of the variant strings for generating initial/new varDNAs
     vector<int> randIdxVector(DNALen);
     for (int idx = 0; idx < DNALen; ++idx) {
@@ -201,11 +212,16 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     varCnt = 0;
     state[p0] = 0; // Infected with variant 0 (initial variant)
     curInf = 1;
-    curVarInf[0] = 1;
+    curVarInf[0] = 0;
     varParents[0] = -1; // Initial variant
     varProfs[0] = {1};
     varStarts[0] = 0;
-    immunity[0] = varDNAs[0];
+    if(fadingImmunity>0) {
+        immunityUpdate(immunity[0], varDNAs[0], immuStrength + 1);
+    }
+    else{
+        immunityUpdate(immunity[0], varDNAs[0], immuStrength);
+    }
     //counting 1's
     varInfSeverity[count(varDNAs[0].begin(), varDNAs[0].end(), 1)]++;
 
@@ -222,8 +238,10 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
         for (int from = 0; from < numNodes; ++from) {
             if (state[from] >= 0) { // Infected
                 for (int to = 0; to < numNodes; ++to) {
-                    if (adjM[from][to] > 0 && state[to] == -1) {
-                        potStrains[to].push_back(state[from]);
+                    if(from != to){
+                        if (adjM[from][to] > 0 && state[to] == -1) {
+                            potStrains[to].push_back(state[from]);
+                        }
                     }
                 }
             }
@@ -237,7 +255,7 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
 
                 if (state[node] < -1) { // Infected
                     int curStrainID = state[node] + maxVars + 1;
-                    immunityUpdate(immunity[node],varDNAs[curStrainID], immuStrength);
+                    immunityUpdate(immunity[node],varDNAs[curStrainID], immuStrength+2);
                     if (newVarProb > 0 && drand48() < newVarProb) { // New Variant
                         varCnt += 1;
                         if (varCnt == maxVars) {
@@ -245,11 +263,17 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                         }
                         newVariant(varDNAs[curStrainID], varAlphas[curStrainID], varDNAs[varCnt], varAlphas[varCnt],
                                    randIdxVector, minEdits, maxEdits, alphaDelta, coupled);
-                        state[node] = varCnt - maxVars -  1;
-                        immunityUpdate(immunity[node],varDNAs[varCnt], immuStrength);
+                        state[node] = varCnt - maxVars - 1;
+                        if(fadingImmunity>0){
+                            immunityUpdate(immunity[node], varDNAs[varCnt], immuStrength + 2);
+                        }
+                        else{
+                            immunityUpdate(immunity[node], varDNAs[varCnt], immuStrength);
+                        }
+
                         varStarts[varCnt] = epiLen;
                         varParents[varCnt] = curStrainID;
-                        varProfs[varCnt] = {1};
+                        //varProfs[varCnt] = {1};
                     }
                 }
             }
@@ -271,15 +295,19 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
         for (int var = 0; var <= varCnt; ++var) {
             if (curVarInf[var] > 0) {
                 varProfs[var].push_back(curVarInf[var]);
-                int val=0;
-                if (varProfs[var].size()-immuStrength>val) val= varProfs[var].size()-immuStrength;
+                int variantStart = 0;
+                int variantEnd = varProfs[var].size();
+                if(variantEnd-variantStart>immuStrength){
+                    variantStart = variantEnd - immuStrength-1;
+                }
                 int sum = 0;
-                for(int i= val;i<varProfs[var].size();i++){
+                for(int i= variantStart;i<variantEnd;i++){
                     sum+=varProfs[var][i];
                 }
                 if(sum>numNodes){
                     cout << "Error sum>numNodes" << endl;
                 }
+
                 curVarInf[var] = 0;
             }
         }
@@ -370,8 +398,8 @@ Graph::newVariant(vector<int> &origVar, const double &origVarAlpha, vector<int> 
         } while (fullChangeRange > alphaDelta * 2);
         // newVarAlpha is in range [origVarAlpha - alphaDelta, origVarAlpha + alphaDelta].
         newVarAlpha = origVarAlpha + (fullChangeRange - alphaDelta);
-        if (newVarAlpha < 0) newVarAlpha = 0.0;
-        if (newVarAlpha > 1) newVarAlpha = 1.0;
+        if (newVarAlpha < 0.1) newVarAlpha = 0.1;
+        if (newVarAlpha > 0.9) newVarAlpha = 0.9;
     }
     return 0;
 }
@@ -492,7 +520,7 @@ void Graph::vectorFlip(vector<int>&v, int pos) {
 //Immunity update function
 void Graph::immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr, int immuStrength){
     for(int i=0; i<immunityStr.size();i++){
-        if(immunityStr[i]==0 && variantStr[i]==1){
+        if(variantStr[i]==1){
             immunityStr[i]=immuStrength;
         }
     }
