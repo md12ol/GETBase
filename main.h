@@ -66,7 +66,8 @@ int bestVarCount;                       // The Number of Variants in the Best Ep
 int bestVarParents[maxNumVars];         // The Parents of Each Variant in the Best Epidemic
 int bestVarStarts[maxNumVars];           // The Variant Lengths (start, end) for Variants in the Best Epidemic
 vector<int> bestVarProfs[maxNumVars];   // The Variant Profiles for the Variants in the Best Epidemic
-vector<vector<int>> bestVarDNAs(maxNumVars, vector<int> (DNALen)); // The Variant DNA Strings for the Variants in the Best Epidemic
+vector<vector<int>> bestVarDNAs(maxNumVars,
+                                vector<int>(DNALen)); // The Variant DNA Strings for the Variants in the Best Epidemic
 double bestVarAlphas[maxNumVars];
 int bestVarSeverity[DNALen];
 double newVarProb;                     // Probability of Generating a new Variant
@@ -91,6 +92,7 @@ void cmdLineIntro(ostream &outStrm);                    // Print Intro to User
 void cmdLineRun(int run, ostream &outStrm);             // Print Column Headers to User
 void initPop();                                         // Initialize the Population
 bool necroticFilter();
+
 double fitness(int idx, bool final);                    // Calculate the Fitness
 double epiLenFitness(int idx, bool final);
 double epiSpreadFitness(int idx, bool final);
@@ -108,6 +110,7 @@ int printIdxsOfVector(T1 &outp, vector<T2> vec,
                       const string &msg,
                       const string &sep,
                       bool newline);
+
 void reportBest(ostream &outStrm);
 
 int getArgs(char *args[]) {
@@ -139,13 +142,11 @@ int getArgs(char *args[]) {
         }
     }
     immuStr = stoi(args[19]);
-    if(immuStr>0){ // fading immunity
+    if (immuStr > 0) { // fading immunity
         fadingImmunity = 1;
-    }
-    else if(immuStr == 0){ // static immunity
+    } else if (immuStr == 0) { // static immunity
         fadingImmunity = 0;
-    }
-    else{ // no immunity
+    } else { // no immunity
         fadingImmunity = -1;
     }
     cout << "Arguments Captured!" << endl;
@@ -426,7 +427,7 @@ double epiSpreadFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf,fadingImmunity, immuStr);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity, immuStr);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             sum += totInf;
@@ -780,7 +781,7 @@ void reportBest(ostream &outStrm) {//report the best graph
         }
         for (int i = 0; i <= bestVarCount; i++) {
             outStrm << "V" << i << "\t" << left << setw(10) << bestVarAlphas[i];
-            for(int j=0;j<bestVarDNAs[i].size();j++){
+            for (int j = 0; j < bestVarDNAs[i].size(); j++) {
                 outStrm << bestVarDNAs[i][j];
             }
             outStrm << endl;

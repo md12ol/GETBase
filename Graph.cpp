@@ -23,7 +23,7 @@ Graph::Graph(int numNodes) {
     immunity.reserve(numNodes);
 
     vector<int> emptyRow(numNodes);
-    vector<int>emptyBS(DNALen,0);
+    vector<int> emptyBS(DNALen, 0);
     for (int node = 0; node < numNodes; ++node) {
         numInfNeighs.push_back(0);
         state.push_back(0);
@@ -170,13 +170,11 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     totInf = 0;
     //int immuStrength = fadingImmunity ? immuStr : 1;
     int immuStrength;
-    if(fadingImmunity>0){ // fading immunity
+    if (fadingImmunity > 0) { // fading immunity
         immuStrength = immuStr;
-    }
-    else if(fadingImmunity==0){ // static immunity
+    } else if (fadingImmunity == 0) { // static immunity
         immuStrength = 1;
-    }
-    else{
+    } else {
         immuStrength = 0; // no immunity
     }
 
@@ -189,15 +187,15 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
 
     for (int node = 0; node < numNodes; ++node) {
         state[node] = -1; // Susceptible
-        std::fill(immunity[node].begin(), immunity[node].end(),0); // Zeros in Immunity Strings
-        std::fill(varDNAs[node].begin(), varDNAs[node].end(),0); // Zeros in Variant Strings
+        std::fill(immunity[node].begin(), immunity[node].end(), 0); // Zeros in Immunity Strings
+        std::fill(varDNAs[node].begin(), varDNAs[node].end(), 0); // Zeros in Variant Strings
     }
 
     shuffle(randIdxVector.begin(), randIdxVector.end(), std::mt19937(std::random_device()()));
 
     //creating first variant with random 1's
     for (int idx = 0; idx < initBits; ++idx) {
-        varDNAs[0][randIdxVector[idx]]=1;
+        varDNAs[0][randIdxVector[idx]] = 1;
     }
 
 
@@ -216,10 +214,9 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     varParents[0] = -1; // Initial variant
     varProfs[0] = {1};
     varStarts[0] = 0;
-    if(fadingImmunity>0) {
+    if (fadingImmunity > 0) {
         immunityUpdate(immunity[0], varDNAs[0], immuStrength + 1);
-    }
-    else{
+    } else {
         immunityUpdate(immunity[0], varDNAs[0], immuStrength);
     }
     //counting 1's
@@ -238,7 +235,7 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
         for (int from = 0; from < numNodes; ++from) {
             if (state[from] >= 0) { // Infected
                 for (int to = 0; to < numNodes; ++to) {
-                    if(from != to){
+                    if (from != to) {
                         if (adjM[from][to] > 0 && state[to] == -1) {
                             potStrains[to].push_back(state[from]);
                         }
@@ -255,7 +252,11 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
 
                 if (state[node] < -1) { // Infected
                     int curStrainID = state[node] + maxVars + 1;
-                    immunityUpdate(immunity[node],varDNAs[curStrainID], immuStrength+2);
+                    if (fadingImmunity > 0) {
+                        immunityUpdate(immunity[0], varDNAs[0], immuStrength + 1);
+                    } else {
+                        immunityUpdate(immunity[0], varDNAs[0], immuStrength);
+                    }
                     if (newVarProb > 0 && drand48() < newVarProb) { // New Variant
                         varCnt += 1;
                         if (varCnt == maxVars) {
@@ -264,13 +265,11 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                         newVariant(varDNAs[curStrainID], varAlphas[curStrainID], varDNAs[varCnt], varAlphas[varCnt],
                                    randIdxVector, minEdits, maxEdits, alphaDelta, coupled);
                         state[node] = varCnt - maxVars - 1;
-                        if(fadingImmunity>0){
-                            immunityUpdate(immunity[node], varDNAs[varCnt], immuStrength + 2);
-                        }
-                        else{
+                        if (fadingImmunity > 0) {
+                            immunityUpdate(immunity[node], varDNAs[varCnt], immuStrength + 1);
+                        } else {
                             immunityUpdate(immunity[node], varDNAs[varCnt], immuStrength);
                         }
-
                         varStarts[varCnt] = epiLen;
                         varParents[varCnt] = curStrainID;
                         //varProfs[varCnt] = {1};
@@ -297,14 +296,14 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                 varProfs[var].push_back(curVarInf[var]);
                 int variantStart = 0;
                 int variantEnd = varProfs[var].size();
-                if(variantEnd-variantStart>immuStrength){
-                    variantStart = variantEnd - immuStrength-1;
+                if (variantEnd - variantStart > immuStrength) {
+                    variantStart = variantEnd - immuStrength - 1;
                 }
                 int sum = 0;
-                for(int i= variantStart;i<variantEnd;i++){
-                    sum+=varProfs[var][i];
+                for (int i = variantStart; i < variantEnd; i++) {
+                    sum += varProfs[var][i];
                 }
-                if(sum>numNodes){
+                if (sum > numNodes) {
                     cout << "Error sum>numNodes" << endl;
                 }
 
@@ -312,15 +311,13 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
             }
         }
         //Decrease immunity
-        if(fadingImmunity){
+        if (fadingImmunity > 0) {
             for (int node = 0; node < numNodes; ++node) {
                 if (state[node] == -1) {
                     decreaseImmunity(immunity[node]);
                 }
             }
-
         }
-
     }
     return epiLen;
 }
@@ -334,15 +331,15 @@ int Graph::variantInfect(vector<int> &immStr, double varAlphas[], vector<int> &p
 
     for (int varIdx: potVars) {
         int varOnes = (int) count(varStrs[varIdx].begin(), varStrs[varIdx].end(), 1);
-        int badOnes=0;
-        for(int i=0;i<varStrs[varIdx].size();i++){
-            if(varStrs[varIdx][i]==1 && immStr[i]==0){
+        int badOnes = 0;
+        for (int i = 0; i < varStrs[varIdx].size(); i++) {
+            if (varStrs[varIdx][i] == 1 && immStr[i] == 0) {
                 badOnes++;
             }
         }
         if (badOnes == 0) {
             // Do nothing as they cannot become infected as they are immune.
-            if (!coupled){
+            if (!coupled) {
                 uncoupledFullyImmuneProbs.push_back(varAlphas[varIdx]);
             }
         } else {
@@ -355,8 +352,8 @@ int Graph::variantInfect(vector<int> &immStr, double varAlphas[], vector<int> &p
     for (auto &alphaIdxPair: alphaIdxPairs) {
         if (infect(1, alphaIdxPair.first)) {
             int badOnes = 0;
-            for(int i=0;i<varStrs[alphaIdxPair.second].size();i++){
-                if(varStrs[alphaIdxPair.second][i]==1 && immStr[i]==0){
+            for (int i = 0; i < varStrs[alphaIdxPair.second].size(); i++) {
+                if (varStrs[alphaIdxPair.second][i] == 1 && immStr[i] == 0) {
                     badOnes++;
                 }
             }
@@ -364,9 +361,9 @@ int Graph::variantInfect(vector<int> &immStr, double varAlphas[], vector<int> &p
             return alphaIdxPair.second - maxVars - 1;
         }
     }
-    if (!coupled){
-        for(double prob: uncoupledFullyImmuneProbs){
-            if (infect(1, prob)){
+    if (!coupled) {
+        for (double prob: uncoupledFullyImmuneProbs) {
+            if (infect(1, prob)) {
                 varInfSeverity[0]++;
                 return -1;
             }
@@ -386,7 +383,7 @@ Graph::newVariant(vector<int> &origVar, const double &origVarAlpha, vector<int> 
     int numEdits = (int) lrand48() % (maxEdits - minEdits + 1) + minEdits;
     newVar = origVar;
     for (int idx = 0; idx < numEdits; ++idx) {
-        vectorFlip(newVar,rndIdxVec[idx]);
+        vectorFlip(newVar, rndIdxVec[idx]);
     }
     if (coupled) {
         newVarAlpha = origVarAlpha;
@@ -508,27 +505,26 @@ vector<int> Graph::fill(const string filename) {
     return vals;
 }
 
-void Graph::vectorFlip(vector<int>&v, int pos) {
+void Graph::vectorFlip(vector<int> &v, int pos) {
     if (v[pos] != 0 && v[pos] != 1) {
         printf("Unexpected value!");
-    }
-    else{
+    } else {
         v[pos] = v[pos] == 0 ? 1 : 0;
     }
 }
 
 //Immunity update function
-void Graph::immunityUpdate(vector<int>&immunityStr, vector<int>&variantStr, int immuStrength){
-    for(int i=0; i<immunityStr.size();i++){
-        if(variantStr[i]==1){
-            immunityStr[i]=immuStrength;
+void Graph::immunityUpdate(vector<int> &immunityStr, vector<int> &variantStr, int immuStrength) {
+    for (int i = 0; i < immunityStr.size(); i++) {
+        if (variantStr[i] == 1) {
+            immunityStr[i] = immuStrength;
         }
     }
 }
 
-void Graph::decreaseImmunity(vector<int>&immuString){
-    for(int i=0;i<immuString.size();i++){
-        if(immuString[i]>0) immuString[i]--;
+void Graph::decreaseImmunity(vector<int> &immuString) {
+    for (int i = 0; i < immuString.size(); i++) {
+        if (immuString[i] > 0) immuString[i]--;
     }
 
 }
