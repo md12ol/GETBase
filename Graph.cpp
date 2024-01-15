@@ -253,9 +253,9 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                 if (state[node] < -1) { // Infected
                     int curStrainID = state[node] + maxVars + 1;
                     if (fadingImmunity > 0) {
-                        immunityUpdate(immunity[0], varDNAs[0], immuStrength + 1);
+                        immunityUpdate(immunity[node], varDNAs[curStrainID], immuStrength + 1);
                     } else {
-                        immunityUpdate(immunity[0], varDNAs[0], immuStrength);
+                        immunityUpdate(immunity[node], varDNAs[curStrainID], immuStrength);
                     }
                     if (newVarProb > 0 && drand48() < newVarProb) { // New Variant
                         varCnt += 1;
