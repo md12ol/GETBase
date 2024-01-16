@@ -1,5 +1,4 @@
 import os
-
 tld = "./Output/"
 
 
@@ -8,14 +7,18 @@ def main():
 
     folds = os.listdir(tld)
     for fold in folds:
-        with open(tld + fold + "best.dat", "w") as out:
+        with open(tld + fold + "/best.dat", "w") as out:
             for idx in best_idxs:
-                with open(tld + fold + "best" + idx + ".dat", "r") as inn:
+                with open(tld + fold + "/best" + idx + ".dat", "r") as inn:
                     lines = inn.readlines()
-                    out.writelines(lines)
+                    for line in lines:
+                        out.writelines(line)
                     pass
                 pass
             pass
         pass
 
     pass
+
+
+main()
