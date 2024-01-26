@@ -9,12 +9,13 @@ from graphviz import Graph  # Network visualizer (nodes and edges)
 
 raw_data_path = "./Output/"
 figure_path = "./Figures/"
-main_filename = "best01.dat"
+main_filename = "best.dat"
 num_runs = 30
 lower_better = False
 precision = 6
 col_width = 6 + precision
 num_nodes = 256
+gene_len = 128
 
 
 # Go through a best##.dat file and gather all important results from the file.
@@ -26,12 +27,14 @@ def get_data(file_path: str):
     epi_prof_flag = False
     graph_flag = False
     edge_lists_flag = False
+    first_run_flag =  True
     variant_parents = []
     nets_num_edges = []
     # variant_parents[run_num][variant_idx] = idx of the variant that gave birth to the variant with index variant_idx in run run_num
 
     variant_starts = []
     variant_profs = []
+
 
     with open(file_path) as f:
         lines = f.readlines()
@@ -41,6 +44,11 @@ def get_data(file_path: str):
                 # Removes all the whitespace and newline/carriage return from the right side of the string.
                 line = line.rstrip()  # i.e. line = "20387.8"
                 fits.append(float(line))
+                if not first_run_flag:
+                    edge_lists_flag = False
+                    nets_edge_lists.append(one_net_lists[:-1])
+                    pass
+                first_run_flag = False
                 pass
             elif line.__contains__("0.5"):
                 epi_prof_flag = False
@@ -53,10 +61,10 @@ def get_data(file_path: str):
                 edge_lists_flag = True
                 one_net_lists = []
                 pass
-            elif line.rstrip() == "":
-                edge_lists_flag = False
-                nets_edge_lists.append(one_net_lists)
-                pass
+            # elif line.rstrip() == "":
+            #     edge_lists_flag = False
+            #     nets_edge_lists.append(one_net_lists)
+            #     pass
             elif line.__contains__("Severity Histogram: "):
                 line = line.split(": ")[1]
                 line = line.rstrip()
@@ -101,10 +109,22 @@ def get_data(file_path: str):
                     pass
                 pass
             elif edge_lists_flag:
-                one_net_lists.append([int(i) for i in line.rstrip().split(" ")])
+                edg_lst = []
+                if line.rstrip() == '':
+                    one_net_lists.append(edg_lst)
+                    pass
+                else:
+                    for i in line.rstrip().split(" "):
+                        edg_lst.append(int(i))
+                        pass
+                    one_net_lists.append((edg_lst))
+                    pass
+
+               # one_net_lists.append([int(i) for i in line.rstrip().split(" ")])
                 pass
             pass
         pass
+    nets_edge_lists.append(one_net_lists[:-1])
 
     # data[run_num][0] = run number
     # data[run_num][1] = run's fitness
@@ -306,17 +326,20 @@ def node_deg_hist(el: []):
 def main():
     print("START")
     folder_names = os.listdir(raw_data_path)
-    if len(folder_names) == 2:
-        exp_titles = ["Epidemic Severity Fitness", "Epidemic Spread Fitness"]
-        pass
-    else:
-        exp_titles = ["Epidemic Spread Fitness"]
-        pass
+    # if len(folder_names) == 2:
+    #     exp_titles = ["Epidemic Severity Fitness", "Epidemic Spread Fitness"]
+    #     pass
+    # else:
+    #     exp_titles = ["Epidemic Spread Fitness"]
+    #     pass
+
 
     data = []
+    exp_titles = []
     for fold in folder_names:
         dat = get_data(raw_data_path + fold + "/" + main_filename)
         data.append(dat)
+        exp_titles.append(str(fold))
         pass
 
     # data[exp_num][run_num][1] = run's fitness
@@ -333,7 +356,7 @@ def main():
     for exp_num, title in enumerate(exp_titles):
         make_histogram(data[exp_num][0][2], title)
 
-        avg_hist = [0 for _ in range(128)]
+        avg_hist = [0 for _ in range(gene_len)]
         total_edges = 0
         for run in range(num_runs):
             total_edges += data[exp_num][run][6]
@@ -349,34 +372,38 @@ def main():
         avg_edges.append(total_edges / num_runs)
         make_histogram(avg_hist, "AVERAGE " + title)
 
-        make_epi_profile(data[exp_num][0][3], data[exp_num][0][4], data[exp_num][0][5], title)
+        make_epi_profile(data[exp_num][0][3], data[exp_num][0][4], data[exp_num][0][5], title.split(" - ")[1][:20] + title[-15:])
+        #make_epi_profile(data[exp_num][1][3], data[exp_num][1][4], data[exp_num][1][5], title.split(" w ")[1][:20] + "1")
+        #make_epi_profile(data[exp_num][2][3], data[exp_num][2][4], data[exp_num][2][5], title.split(" w ")[1][:20] + "2")
+
+        #make_graph(edge_list(data[exp_num][0][7], num_nodes),str("Best Network "+title), num_nodes)
         pass
 
-    if len(folder_names) == 2:
-        make_lines([avg_hists[0], avg_hists[1]], ["Severity", "Spread"], "AVERAGE Histogram for Both Fitness Functions")
-        calc_avg_inf_var(data[0], "Epidemic Severity")
-        calc_avg_inf_var(data[1], "Epidemic Spread")
-        pass
-    else:
-        make_lines([avg_hists[0]], ["Spread"], "AVERAGE Histogram for Both Fitness Functions")
-        calc_avg_inf_var(data[0], "Epidemic Spread")
-        pass
+    # if len(folder_names) == 2:
+    #     make_lines([avg_hists[0], avg_hists[1]], ["Severity", "Spread"], "AVERAGE Histogram for Both Fitness Functions")
+    #     calc_avg_inf_var(data[0], "Epidemic Severity")
+    #     calc_avg_inf_var(data[1], "Epidemic Spread")
+    #     pass
+    # else:
+    #     make_lines([avg_hists[0]], ["Spread"], "AVERAGE Histogram for Both Fitness Functions")
+    #     calc_avg_inf_var(data[0], "Epidemic Spread")
+    #     pass
 
-    print("")
+    # print("")
 
-    if len(folder_names) == 2:
-        print("Average Number of Edges for Epidemic Severity: " + str(avg_edges[0]))
-        print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[1]))
-        node_deg_hist(data[0][0][7])
-        node_deg_hist(data[1][0][7])
-        make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Severity Fitness", num_nodes)
-        make_graph(edge_list(data[1][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
-        pass
-    else:
-        print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[0]))
-        node_deg_hist(data[0][0][7])
-        make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
-        pass
+    # if len(folder_names) == 2:
+    #     print("Average Number of Edges for Epidemic Severity: " + str(avg_edges[0]))
+    # #     print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[1]))
+    # #     node_deg_hist(data[0][0][7])
+    # #     node_deg_hist(data[1][0][7])
+    # #     make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Severity Fitness", num_nodes)
+    # #     make_graph(edge_list(data[1][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
+    # #     pass
+    # # else:
+    # #     print("Average Number of Edges for Epidemic Spread: " + str(avg_edges[0]))
+    # #     node_deg_hist(data[0][0][7])
+    # #     make_graph(edge_list(data[0][0][7], num_nodes), "Best Network with Epidemic Spread Fitness", num_nodes)
+    # #     pass
 
     print("END")
     pass

@@ -1,5 +1,4 @@
 import os
-
 tld = "./Output/"
 
 
@@ -13,14 +12,14 @@ def main():
             for idx in best_idxs:
                 with open(tld + fold + "/best" + idx + ".dat", "r") as inn:
                     lines = inn.readlines()
-                    out.writelines(lines)
+                    for line in lines:
+                        out.writelines(line)
                     pass
                 pass
             pass
         pass
 
     pass
-
 
 
 main()
