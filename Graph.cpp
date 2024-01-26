@@ -306,7 +306,6 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                 if (sum > numNodes) {
                     cout << "Error sum>numNodes" << endl;
                 }
-
                 curVarInf[var] = 0;
             }
         }
