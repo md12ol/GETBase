@@ -394,8 +394,10 @@ Graph::newVariant(vector<int> &origVar, const double &origVarAlpha, vector<int> 
         } while (fullChangeRange > alphaDelta * 2);
         // newVarAlpha is in range [origVarAlpha - alphaDelta, origVarAlpha + alphaDelta].
         newVarAlpha = origVarAlpha + (fullChangeRange - alphaDelta);
-        if (newVarAlpha < 0.1) newVarAlpha = 0.1;
-        if (newVarAlpha > 0.9) newVarAlpha = 0.9;
+//        if (newVarAlpha < 0.1) newVarAlpha = 0.1;
+//        if (newVarAlpha > 0.9) newVarAlpha = 0.9;
+        if (newVarAlpha < 0.0) newVarAlpha = 0.0;
+        if (newVarAlpha > 1) newVarAlpha = 1;
     }
     return 0;
 }
