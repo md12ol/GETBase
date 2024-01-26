@@ -210,7 +210,7 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
     varCnt = 0;
     state[p0] = 0; // Infected with variant 0 (initial variant)
     curInf = 1;
-    curVarInf[0] = 0;
+    curVarInf[0] = 1;
     varParents[0] = -1; // Initial variant
     varProfs[0] = {1};
     varStarts[0] = 0;
@@ -306,7 +306,6 @@ int Graph::SIRwithVariants(int p0, double varAlphas[], bool coupled, double newV
                 if (sum > numNodes) {
                     cout << "Error sum>numNodes" << endl;
                 }
-
                 curVarInf[var] = 0;
             }
         }
