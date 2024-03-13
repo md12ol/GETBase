@@ -47,6 +47,8 @@ const int SDAMaxRespLen = 2;
 int initOneBits = 32;
 const int maxNumVars = numNodes;
 const int maxEpiLen = 128;
+int fadingImmunity;
+int immuStr;
 
 // Genetic Algorithm Variables
 SDA *SDAPop;                // Stores the Population of SDAs
@@ -64,7 +66,8 @@ int bestVarCount;                       // The Number of Variants in the Best Ep
 int bestVarParents[maxNumVars];         // The Parents of Each Variant in the Best Epidemic
 int bestVarStarts[maxNumVars];           // The Variant Lengths (start, end) for Variants in the Best Epidemic
 vector<int> bestVarProfs[maxNumVars];   // The Variant Profiles for the Variants in the Best Epidemic
-bitset<DNALen> bestVarDNAs[maxNumVars];  // The Variant DNA Strings for the Variants in the Best Epidemic
+vector<vector<int>> bestVarDNAs(maxNumVars,
+                                vector<int>(DNALen)); // The Variant DNA Strings for the Variants in the Best Epidemic
 double bestVarAlphas[maxNumVars];
 int bestVarSeverity[DNALen];
 double newVarProb;                     // Probability of Generating a new Variant
@@ -89,6 +92,7 @@ void cmdLineIntro(ostream &outStrm);                    // Print Intro to User
 void cmdLineRun(int run, ostream &outStrm);             // Print Column Headers to User
 void initPop();                                         // Initialize the Population
 bool necroticFilter();
+
 double fitness(int idx, bool final);                    // Calculate the Fitness
 double epiLenFitness(int idx, bool final);
 double epiSpreadFitness(int idx, bool final);
@@ -106,6 +110,7 @@ int printIdxsOfVector(T1 &outp, vector<T2> vec,
                       const string &msg,
                       const string &sep,
                       bool newline);
+
 void reportBest(ostream &outStrm);
 
 int getArgs(char *args[]) {
@@ -135,6 +140,14 @@ int getArgs(char *args[]) {
         if (!varCoupled) {
             varAlphaDelta = stod(args[18]);
         }
+    }
+    immuStr = stoi(args[19]);
+    if (immuStr > 0) { // fading immunity
+        fadingImmunity = 1;
+    } else if (immuStr == 0) { // static immunity
+        fadingImmunity = 0;
+    } else { // no immunity
+        fadingImmunity = -1;
     }
     cout << "Arguments Captured!" << endl;
     return 0;
@@ -336,14 +349,13 @@ double epiLenFitness(int idx, bool final) {
     } else {
         int numVars = 0;
         vector<int> varProfs[maxNumVars];
-        vector<bitset<DNALen>> varDNAs(maxNumVars);
+        //initialize and filling all zeros
+        vector<vector<int>> varDNAs(maxNumVars, vector<int>(DNALen, 0));
         int varParents[maxNumVars];
         int varStarts[maxNumVars];
         double varAlphas[maxNumVars];
         int varInfSeverity[DNALen];
-        bitset<DNALen> emptyBS(0);
         for (int var = 0; var < maxNumVars; ++var) {
-            varDNAs.push_back(emptyBS);
             varAlphas[var] = -1;
         }
         varAlphas[0] = alpha;
@@ -353,7 +365,7 @@ double epiLenFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity, immuStr);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             sum += epiLen;
@@ -400,14 +412,12 @@ double epiSpreadFitness(int idx, bool final) {
     } else {
         int numVars = 0;
         vector<int> varProfs[maxNumVars];
-        vector<bitset<DNALen>> varDNAs(maxNumVars);
+        vector<vector<int>> varDNAs(maxNumVars, vector<int>(DNALen, 0));
         int varParents[maxNumVars];
         int varStarts[maxNumVars];
         double varAlphas[maxNumVars];
         int varInfSeverity[DNALen];
-        bitset<DNALen> emptyBS(0);
         for (int var = 0; var < maxNumVars; ++var) {
-            varDNAs.push_back(emptyBS);
             varAlphas[var] = -1;
         }
         varAlphas[0] = alpha;
@@ -417,7 +427,7 @@ double epiSpreadFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity, immuStr);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             sum += totInf;
@@ -455,14 +465,12 @@ double epiSeverityFitness(int idx, bool final) {
     } else {
         int numVars = 0;
         vector<int> varProfs[maxNumVars];
-        vector<bitset<DNALen>> varDNAs(maxNumVars);
+        vector<vector<int>> varDNAs(maxNumVars, vector<int>(DNALen, 0));
         int varParents[maxNumVars];
         int varStarts[maxNumVars];
         double varAlphas[maxNumVars];
         int varInfSeverity[DNALen];
-        bitset<DNALen> emptyBS(0);
         for (int var = 0; var < maxNumVars; ++var) {
-            varDNAs.push_back(emptyBS);
             varAlphas[var] = -1;
         }
         varAlphas[0] = alpha;
@@ -472,7 +480,7 @@ double epiSeverityFitness(int idx, bool final) {
             do {
                 epiLen = network.SIRwithVariants(0, varAlphas, varCoupled, newVarProb, numVars, maxNumVars, maxEpiLen,
                                                  varProfs, varDNAs, varParents, varStarts, varInfSeverity, initOneBits,
-                                                 minEdits, maxEdits, varAlphaDelta, totInf);
+                                                 minEdits, maxEdits, varAlphaDelta, totInf, fadingImmunity, immuStr);
                 epiCnt += 1;
             } while (epiLen < minEpiLen && epiCnt < shortEpiRetrys);
             oneSum = 0;
@@ -773,7 +781,10 @@ void reportBest(ostream &outStrm) {//report the best graph
         }
         for (int i = 0; i <= bestVarCount; i++) {
             outStrm << "V" << i << "\t" << left << setw(10) << bestVarAlphas[i];
-            outStrm << bestVarDNAs[i] << endl;
+            for (int j = 0; j < bestVarDNAs[i].size(); j++) {
+                outStrm << bestVarDNAs[i][j];
+            }
+            outStrm << endl;
         }
         outStrm << "Severity Histogram: ";
         for (int i = 0; i < DNALen; i++) {
@@ -802,3 +813,4 @@ void reportBest(ostream &outStrm) {//report the best graph
     G.print(outStrm);
     outStrm << endl;
 }
+
